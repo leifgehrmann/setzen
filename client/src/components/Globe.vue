@@ -9,6 +9,9 @@ export default {
     let sphere: THREE.Sphere, uniforms: THREE.Uniform;
 
     let displacement: Float32Array, noise: Float32Array;
+    let colorR: Float32Array;
+    let colorG: Float32Array;
+    let colorB: Float32Array;
 
     init();
     animate();
@@ -25,50 +28,30 @@ export default {
 
         'amplitude': {value: 1.0},
         'color': {value: new THREE.Color(0xff2200)},
-        'colorTexture': {value: new THREE.TextureLoader().load('water.jpg')}
 
       };
 
-      uniforms['colorTexture'].value.wrapS = uniforms['colorTexture'].value.wrapT = THREE.RepeatWrapping;
-
       const vertexShader = `
-  uniform float amplitude;
-
-  attribute float displacement;
-
-  varying vec3 vNormal;
-  varying vec2 vUv;
+  attribute float colorR;
+  attribute float colorG;
+  attribute float colorB;
+  varying vec4 vColor;
 
   void main() {
-
-    vNormal = normal;
-    vUv = ( 0.5 + amplitude ) * uv + vec2( amplitude );
-
-    vec3 newPosition = position + amplitude * normal * vec3( displacement );
-    gl_Position = projectionMatrix * modelViewMatrix * vec4( newPosition, 1.0 );
-
+    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    vColor = vec4(colorR, colorG, colorB, 1.0);
   }
   `
 
       const fragmentShader = `
   varying vec3 vNormal;
   varying vec2 vUv;
+  varying vec4 vColor;
 
   uniform vec3 color;
-  uniform sampler2D colorTexture;
 
   void main() {
-
-    vec3 light = vec3( 0.5, 0.2, 1.0 );
-    light = normalize( light );
-
-    float dProd = dot( vNormal, light ) * 0.5 + 0.5;
-
-    vec4 tcolor = texture2D( colorTexture, vUv );
-    vec4 gray = vec4( vec3( tcolor.r * 0.3 + tcolor.g * 0.59 + tcolor.b * 0.11 ), 1.0 );
-
-    gl_FragColor = gray * vec4( vec3( dProd ) * vec3( color ), 1.0 );
-
+    gl_FragColor = vColor;
   }
   `
 
@@ -76,25 +59,36 @@ export default {
 
         uniforms: uniforms,
         vertexShader,
-        fragmentShader
-
+        fragmentShader,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthTest: false,
+        vertexColors: true,
+        flatShading: true
       });
 
 
-      const radius = 50, segments = 128, rings = 64;
+      const radius = 50;
 
-      const geometry = new THREE.SphereGeometry(radius, segments, rings);
+      const geometry = new THREE.IcosahedronGeometry(radius, 80);
 
+      console.log(geometry.attributes.position.count)
       displacement = new Float32Array(geometry.attributes.position.count);
+      colorR = new Float32Array(geometry.attributes.position.count);
+      colorG = new Float32Array(geometry.attributes.position.count);
+      colorB = new Float32Array(geometry.attributes.position.count);
       noise = new Float32Array(geometry.attributes.position.count);
 
       for (let i = 0; i < displacement.length; i++) {
 
-        noise[i] = Math.random() * 5;
+        noise[i] = 0;
 
       }
 
       geometry.setAttribute('displacement', new THREE.BufferAttribute(displacement, 1));
+      geometry.setAttribute('colorR', new THREE.BufferAttribute(colorR, 1));
+      geometry.setAttribute('colorG', new THREE.BufferAttribute(colorG, 1));
+      geometry.setAttribute('colorB', new THREE.BufferAttribute(colorB, 1));
 
       sphere = new THREE.Mesh(geometry, shaderMaterial);
       scene.add(sphere);
@@ -135,7 +129,7 @@ export default {
 
       sphere.rotation.y = sphere.rotation.z = 0.01 * time;
 
-      uniforms['amplitude'].value = 2.5 * Math.sin(sphere.rotation.y * 0.125);
+      uniforms['amplitude'].value = 1;
       uniforms['color'].value.offsetHSL(0.0005, 0, 0);
 
       for (let i = 0; i < displacement.length; i++) {
@@ -149,7 +143,22 @@ export default {
 
       }
 
+      for (let i = 0; i < displacement.length; i+=3) {
+        colorR[i] = colorR[i] * (1.05 - Math.random() * 0.1) + Math.random() * 0.001;
+        colorG[i] = colorG[i] * (1.05 - Math.random() * 0.1) + Math.random() * 0.001;
+        colorB[i] = colorB[i] * (1.05 - Math.random() * 0.1) + Math.random() * 0.001;
+        colorR[i + 1] = colorR[i];
+        colorG[i + 1] = colorG[i];
+        colorB[i + 1] = colorB[i];
+        colorR[i + 2] = colorR[i];
+        colorG[i + 2] = colorG[i];
+        colorB[i + 2] = colorB[i];
+      }
+
       sphere.geometry.attributes.displacement.needsUpdate = true;
+      sphere.geometry.attributes.colorR.needsUpdate = true;
+      sphere.geometry.attributes.colorG.needsUpdate = true;
+      sphere.geometry.attributes.colorB.needsUpdate = true;
 
       renderer.render(scene, camera);
 
