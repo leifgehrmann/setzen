@@ -1,14 +1,25 @@
 <script lang="ts">
 import * as THREE from 'three';
+import {ArcballControls} from "three/examples/jsm/controls/ArcballControls";
+
+var seed = 1;
+function myRandom() {
+  var x = Math.sin(seed++) * 10000;
+  return x - Math.floor(x);
+}
 
 export default {
   mounted() {
 
     let renderer: THREE.Renderer, scene: THREE.Scene, camera: THREE.Camera;
 
-    let sphere: THREE.Sphere, uniforms: THREE.Uniform;
+    let controls: ArcballControls|null = null
 
-    let displacement: Float32Array, noise: Float32Array;
+    let cameraZoom = 390;
+    let cameraVector = new THREE.Vector3(Math.random(), Math.random(), Math.random()).normalize();
+
+    let sphere: THREE.Sphere;
+
     let colorR: Float32Array;
     let colorG: Float32Array;
     let colorB: Float32Array;
@@ -18,18 +29,17 @@ export default {
 
     function init() {
 
+      if (window.innerWidth < window.innerHeight) {
+        cameraZoom *= window.innerHeight/window.innerWidth
+      }
+
       camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 10000);
-      camera.position.z = 300;
+      camera.position.x = cameraVector.x * cameraZoom
+      camera.position.y = cameraVector.y * cameraZoom
+      camera.position.z = cameraVector.z * cameraZoom
 
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0x050505);
-
-      uniforms = {
-
-        'amplitude': {value: 1.0},
-        'color': {value: new THREE.Color(0xff2200)},
-
-      };
 
       const vertexShader = `
   attribute float colorR;
@@ -39,7 +49,7 @@ export default {
 
   void main() {
     gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-    vColor = vec4(colorR, colorG, colorB, 1.0);
+    vColor = vec4(colorR, colorG, colorB, 0.2);
   }
   `
 
@@ -56,8 +66,6 @@ export default {
   `
 
       const shaderMaterial = new THREE.ShaderMaterial({
-
-        uniforms: uniforms,
         vertexShader,
         fragmentShader,
         transparent: true,
@@ -68,24 +76,27 @@ export default {
       });
 
 
-      const radius = 50;
+      const radius = 100;
 
-      const geometry = new THREE.IcosahedronGeometry(radius, 80);
+      const geometry = new THREE.IcosahedronGeometry(radius, 100);
 
       console.log(geometry.attributes.position.count)
-      displacement = new Float32Array(geometry.attributes.position.count);
       colorR = new Float32Array(geometry.attributes.position.count);
       colorG = new Float32Array(geometry.attributes.position.count);
       colorB = new Float32Array(geometry.attributes.position.count);
-      noise = new Float32Array(geometry.attributes.position.count);
 
-      for (let i = 0; i < displacement.length; i++) {
-
-        noise[i] = 0;
-
+      for (let i = 0; i < colorR.length; i+=3) {
+        colorR[i] = myRandom();
+        colorG[i] = myRandom();
+        colorB[i] = myRandom();
+        colorR[i + 1] = colorR[i];
+        colorG[i + 1] = colorG[i];
+        colorB[i + 1] = colorB[i];
+        colorR[i + 2] = colorR[i];
+        colorG[i + 2] = colorG[i];
+        colorB[i + 2] = colorB[i];
       }
 
-      geometry.setAttribute('displacement', new THREE.BufferAttribute(displacement, 1));
       geometry.setAttribute('colorR', new THREE.BufferAttribute(colorR, 1));
       geometry.setAttribute('colorG', new THREE.BufferAttribute(colorG, 1));
       geometry.setAttribute('colorB', new THREE.BufferAttribute(colorB, 1));
@@ -101,8 +112,18 @@ export default {
       container?.appendChild(renderer.domElement);
 
       //
-
+      createControls(camera)
       window.addEventListener('resize', onWindowResize);
+
+    }
+
+    function createControls( camera: THREE.Camera ) {
+
+      controls = new ArcballControls( camera, renderer.domElement );
+
+      controls.enablePan = false
+
+      controls.addEventListener( 'change', function () { renderer.render( scene, camera ); } );
 
     }
 
@@ -124,41 +145,30 @@ export default {
     }
 
     function render() {
-
-      const time = Date.now() * 0.01;
-
-      sphere.rotation.y = sphere.rotation.z = 0.01 * time;
-
-      uniforms['amplitude'].value = 1;
-      uniforms['color'].value.offsetHSL(0.0005, 0, 0);
-
-      for (let i = 0; i < displacement.length; i++) {
-
-        displacement[i] = Math.sin(0.1 * i + time);
-
-        noise[i] += 0.5 * (0.5 - Math.random());
-        noise[i] = THREE.MathUtils.clamp(noise[i], -5, 5);
-
-        displacement[i] += noise[i];
-
+      if (controls !== null) {
+        const tbRadius = cameraZoom/camera.position.distanceTo(new THREE.Vector3(0,0,0))
+        controls?.setTbRadius(tbRadius)
       }
 
-      for (let i = 0; i < displacement.length; i+=3) {
-        colorR[i] = colorR[i] * (1.05 - Math.random() * 0.1) + Math.random() * 0.001;
-        colorG[i] = colorG[i] * (1.05 - Math.random() * 0.1) + Math.random() * 0.001;
-        colorB[i] = colorB[i] * (1.05 - Math.random() * 0.1) + Math.random() * 0.001;
-        colorR[i + 1] = colorR[i];
-        colorG[i + 1] = colorG[i];
-        colorB[i + 1] = colorB[i];
-        colorR[i + 2] = colorR[i];
-        colorG[i + 2] = colorG[i];
-        colorB[i + 2] = colorB[i];
-      }
+      // camera.position.z = 0.001 * time;
+      // rotateAroundWorldAxis(camera, new THREE.Vector3(1, 0, 0), 0.001)
+      // camera.lookAt(new THREE.Vector3(0, 0, 0))
 
-      sphere.geometry.attributes.displacement.needsUpdate = true;
-      sphere.geometry.attributes.colorR.needsUpdate = true;
-      sphere.geometry.attributes.colorG.needsUpdate = true;
-      sphere.geometry.attributes.colorB.needsUpdate = true;
+      // for (let i = 0; i < displacement.length; i+=3) {
+      //   colorR[i] = colorR[i] * (1.05 - Math.random() * 0.1) + Math.random() * 0.001;
+      //   colorG[i] = colorG[i] * (1.05 - Math.random() * 0.1) + Math.random() * 0.001;
+      //   colorB[i] = colorB[i] * (1.05 - Math.random() * 0.1) + Math.random() * 0.001;
+      //   colorR[i + 1] = colorR[i];
+      //   colorG[i + 1] = colorG[i];
+      //   colorB[i + 1] = colorB[i];
+      //   colorR[i + 2] = colorR[i];
+      //   colorG[i + 2] = colorG[i];
+      //   colorB[i + 2] = colorB[i];
+      // }
+
+      // sphere.geometry.attributes.colorR.needsUpdate = true;
+      // sphere.geometry.attributes.colorG.needsUpdate = true;
+      // sphere.geometry.attributes.colorB.needsUpdate = true;
 
       renderer.render(scene, camera);
 
