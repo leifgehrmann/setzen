@@ -2,6 +2,41 @@
 import * as THREE from 'three';
 import {ArcballControls} from "three/examples/jsm/controls/ArcballControls";
 
+const colors = [
+  '#6d001a',
+  '#be0039',
+  '#ff4500',
+  '#ffa800',
+  '#ffd635',
+  '#fff8b8',
+  '#00a368',
+  '#00cc78',
+  '#7eed56',
+  '#00756f',
+  '#009eaa',
+  '#00ccc0',
+  '#2450a4',
+  '#3690ea',
+  '#51e9f4',
+  '#493ac1',
+  '#6a5cff',
+  '#94b3ff',
+  '#811e9f',
+  '#b44ac0',
+  '#e4abff',
+  '#de107f',
+  '#ff3881',
+  '#ff99aa',
+  '#6d482f',
+  '#9c6926',
+  '#ffb470',
+  '#000000',
+  '#515252',
+  '#898d90',
+  '#d4d7d9',
+  '#ffffff'
+]
+
 var seed = 1;
 function myRandom() {
   var x = Math.sin(seed++) * 10000;
@@ -49,7 +84,7 @@ export default {
 
   void main() {
     gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-    vColor = vec4(colorR, colorG, colorB, 0.2);
+    vColor = vec4(colorR, colorG, colorB, 1);
   }
   `
 
@@ -86,9 +121,17 @@ export default {
       colorB = new Float32Array(geometry.attributes.position.count);
 
       for (let i = 0; i < colorR.length; i+=3) {
-        colorR[i] = myRandom();
-        colorG[i] = myRandom();
-        colorB[i] = myRandom();
+
+        let color = parseInt('0x' + colors[Math.floor(myRandom() * colors.length)].substring(1))
+
+        const r = (color>>16)&255
+        const g = (color>>8)&255
+        const b = color&255
+
+
+        colorR[i] = r/255;
+        colorG[i] = g/255;
+        colorB[i] = b/255;
         colorR[i + 1] = colorR[i];
         colorG[i + 1] = colorG[i];
         colorB[i + 1] = colorB[i];
