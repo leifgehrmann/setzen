@@ -19,11 +19,11 @@ jobs:
 
     - name: npm install, build
       run: |
+        sed -i '/\/dist/d' .gitignore
         cd client
         npm ci
         npm run build
         touch ./dist/.nojekyll
-        sed -i '/\/dist/d' .gitignore
         echo "setzen.fun" >> ./dist/CNAME
 
     - name: Deploy
