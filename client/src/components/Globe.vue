@@ -101,8 +101,6 @@ export default {
   varying vec2 vUv;
   varying vec4 vColor;
 
-  uniform vec3 color;
-
   void main() {
     gl_FragColor = vColor;
   }
