@@ -53,7 +53,7 @@ export default {
     let cameraZoom = 390;
     let cameraVector = new THREE.Vector3(Math.random(), Math.random(), Math.random()).normalize();
 
-    let sphere: THREE.Sphere;
+    let sphere: THREE.Mesh;
 
     let colorR: Float32Array;
     let colorG: Float32Array;
@@ -72,6 +72,14 @@ export default {
       camera.position.x = cameraVector.x * cameraZoom
       camera.position.y = cameraVector.y * cameraZoom
       camera.position.z = cameraVector.z * cameraZoom
+
+      var raycaster = new THREE.Raycaster();
+
+      const rotateBtn = document.getElementById('rotate');
+      rotateBtn?.addEventListener('mouse', () => {
+        console.log('hey!')
+        camera.rotation.z += Math.PI / 12;
+      });
 
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0x050505);
@@ -106,8 +114,7 @@ export default {
         transparent: true,
         blending: THREE.AdditiveBlending,
         depthTest: false,
-        vertexColors: true,
-        flatShading: true
+        vertexColors: true
       });
 
 
@@ -128,7 +135,6 @@ export default {
         const g = (color>>8)&255
         const b = color&255
 
-
         colorR[i] = r/255;
         colorG[i] = g/255;
         colorB[i] = b/255;
@@ -147,7 +153,43 @@ export default {
       sphere = new THREE.Mesh(geometry, shaderMaterial);
       scene.add(sphere);
 
+      function triangleClick(event: MouseEvent) {
+        console.log("Click.");
+        const mouseX = ( event.clientX / window.innerWidth ) * 2 - 1;
+        const mouseY = - ( event.clientY / window.innerHeight ) * 2 + 1;
+        const mouse = new THREE.Vector2( mouseX, mouseY);
+
+        raycaster.setFromCamera( mouse, camera );
+        var intersects = raycaster.intersectObjects( [sphere], true );
+
+        // if there is one (or more) intersections
+        console.log(intersects)
+        if ( intersects.length > 0 ) {
+          const face = intersects[ 0 ].face as THREE.Face;
+
+          let color = parseInt('0x' + colors[Math.floor(myRandom() * colors.length /6)].substring(1))
+
+          const r = (color>>16)&255
+          const g = (color>>8)&255
+          const b = color&255
+
+          colorR[face.a] = r/255
+          colorR[face.b] = r/255
+          colorR[face.c] = r/255
+          colorG[face.a] = g/255
+          colorG[face.b] = g/255
+          colorG[face.c] = g/255
+          colorB[face.a] = b/255
+          colorB[face.b] = b/255
+          colorB[face.c] = b/255
+          sphere.geometry.attributes.colorR.needsUpdate = true;
+          sphere.geometry.attributes.colorG.needsUpdate = true;
+          sphere.geometry.attributes.colorB.needsUpdate = true;
+        }
+      }
+
       renderer = new THREE.WebGLRenderer();
+      // @ts-ignore
       renderer.setPixelRatio(window.devicePixelRatio);
       renderer.setSize(window.innerWidth, window.innerHeight);
 
@@ -158,6 +200,7 @@ export default {
       createControls(camera)
       window.addEventListener('resize', onWindowResize);
 
+      container?.addEventListener( 'click', triangleClick, false );
     }
 
     function createControls( camera: THREE.Camera ) {
@@ -171,8 +214,9 @@ export default {
     }
 
     function onWindowResize() {
-
+      // @ts-ignore
       camera.aspect = window.innerWidth / window.innerHeight;
+      // @ts-ignore
       camera.updateProjectionMatrix();
 
       renderer.setSize(window.innerWidth, window.innerHeight);
@@ -192,26 +236,6 @@ export default {
         const tbRadius = cameraZoom/camera.position.distanceTo(new THREE.Vector3(0,0,0))
         controls?.setTbRadius(tbRadius)
       }
-
-      // camera.position.z = 0.001 * time;
-      // rotateAroundWorldAxis(camera, new THREE.Vector3(1, 0, 0), 0.001)
-      // camera.lookAt(new THREE.Vector3(0, 0, 0))
-
-      // for (let i = 0; i < displacement.length; i+=3) {
-      //   colorR[i] = colorR[i] * (1.05 - Math.random() * 0.1) + Math.random() * 0.001;
-      //   colorG[i] = colorG[i] * (1.05 - Math.random() * 0.1) + Math.random() * 0.001;
-      //   colorB[i] = colorB[i] * (1.05 - Math.random() * 0.1) + Math.random() * 0.001;
-      //   colorR[i + 1] = colorR[i];
-      //   colorG[i + 1] = colorG[i];
-      //   colorB[i + 1] = colorB[i];
-      //   colorR[i + 2] = colorR[i];
-      //   colorG[i + 2] = colorG[i];
-      //   colorB[i + 2] = colorB[i];
-      // }
-
-      // sphere.geometry.attributes.colorR.needsUpdate = true;
-      // sphere.geometry.attributes.colorG.needsUpdate = true;
-      // sphere.geometry.attributes.colorB.needsUpdate = true;
 
       renderer.render(scene, camera);
 

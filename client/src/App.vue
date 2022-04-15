@@ -6,10 +6,11 @@ import ColorSelector from "./components/ColorSelector.vue";
 
 <template>
   <div class="relative">
-  <Globe msg="Hello Vue 3 + TypeScript + Vite" />
+  <Globe/>
   <div class="absolute bottom-0 w-full">
     <div class="bg-neutral-800/70 w-full text-neutral-200 backdrop-blur-md">
-        <ColorSelector />
+<!--      <div id="rotate">Rotate</div>-->
+      <ColorSelector />
     </div>
   </div>
 </div>
