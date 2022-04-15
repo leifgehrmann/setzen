@@ -1,1 +1,14 @@
-<img alt="SETZEN" src="./setzen.png" style="border-radius: 2rem;">
+![SETZEN](setzen.png)
+
+# Client
+
+```
+npm install
+
+# To view
+npm run build
+npm run preview
+
+# To develop
+npm run dev
+```
