@@ -60,7 +60,6 @@ export default {
     let colorB: Float32Array;
 
     init();
-    renderer.render(scene, camera);
 
     function init() {
 
@@ -198,6 +197,8 @@ export default {
       window.addEventListener('resize', onWindowResize);
 
       container?.addEventListener( 'click', triangleClick, false );
+
+      renderer.render(scene, camera);
     }
 
     function createControls( camera: THREE.Camera ) {
