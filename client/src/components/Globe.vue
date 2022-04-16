@@ -62,9 +62,7 @@ export default {
 
     let sphere: THREE.Mesh;
 
-    let colorR: Float32Array;
-    let colorG: Float32Array;
-    let colorB: Float32Array;
+    let vertexColors: Int32Array;
 
     init();
 
@@ -87,14 +85,17 @@ export default {
       scene.background = new THREE.Color(0x000000);
 
       const vertexShader = `
-  attribute float colorR;
-  attribute float colorG;
-  attribute float colorB;
+  attribute int vertexColor;
   varying vec4 vColor;
 
   void main() {
     gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-    vColor = vec4(colorR, colorG, colorB, 1);
+    vColor = vec4(
+      float((vertexColor>>16)&255)/255.0,
+      float((vertexColor>>8)&255)/255.0,
+      float(vertexColor&255)/255.0,
+      1
+    );
   }
   `
 
@@ -121,32 +122,18 @@ export default {
       const geometry = new THREE.IcosahedronGeometry(radius, 224);
 
       console.log(geometry.attributes.position.count/3)
-      colorR = new Float32Array(geometry.attributes.position.count);
-      colorG = new Float32Array(geometry.attributes.position.count);
-      colorB = new Float32Array(geometry.attributes.position.count);
+      vertexColors = new Int32Array(geometry.attributes.position.count);
 
-      for (let i = 0; i < colorR.length; i+=3) {
+      for (let i = 0; i < vertexColors.length; i+=3) {
 
         let color = parseInt('0x' + colors[Math.floor(myRandom() * colors.length)].substring(1))
 
-        const r = (color>>16)&255
-        const g = (color>>8)&255
-        const b = color&255
-
-        colorR[i] = r/255;
-        colorG[i] = g/255;
-        colorB[i] = b/255;
-        colorR[i + 1] = colorR[i];
-        colorG[i + 1] = colorG[i];
-        colorB[i + 1] = colorB[i];
-        colorR[i + 2] = colorR[i];
-        colorG[i + 2] = colorG[i];
-        colorB[i + 2] = colorB[i];
+        vertexColors[i] = color
+        vertexColors[i+1] = color
+        vertexColors[i+2] = color
       }
 
-      geometry.setAttribute('colorR', new THREE.BufferAttribute(colorR, 1));
-      geometry.setAttribute('colorG', new THREE.BufferAttribute(colorG, 1));
-      geometry.setAttribute('colorB', new THREE.BufferAttribute(colorB, 1));
+      geometry.setAttribute('vertexColor', new THREE.BufferAttribute(vertexColors, 1));
 
       sphere = new THREE.Mesh(geometry, shaderMaterial);
       scene.add(sphere);
@@ -167,22 +154,10 @@ export default {
 
           let color = parseInt('0x' + colors[Math.floor(myRandom() * colors.length /6)].substring(1))
 
-          const r = (color>>16)&255
-          const g = (color>>8)&255
-          const b = color&255
-
-          colorR[face.a] = r/255
-          colorR[face.b] = r/255
-          colorR[face.c] = r/255
-          colorG[face.a] = g/255
-          colorG[face.b] = g/255
-          colorG[face.c] = g/255
-          colorB[face.a] = b/255
-          colorB[face.b] = b/255
-          colorB[face.c] = b/255
-          sphere.geometry.attributes.colorR.needsUpdate = true;
-          sphere.geometry.attributes.colorG.needsUpdate = true;
-          sphere.geometry.attributes.colorB.needsUpdate = true;
+          vertexColors[face.a] = color
+          vertexColors[face.b] = color
+          vertexColors[face.c] = color
+          sphere.geometry.attributes.vertexColor.needsUpdate = true;
           renderer.render(scene, camera);
         }
       }
