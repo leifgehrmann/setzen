@@ -60,6 +60,7 @@ export default {
       maxCameraDistance = cameraZoom * 1.5
     }
     let cameraVector = new THREE.Vector3(Math.random(), Math.random(), Math.random()).normalize();
+    let cameraTrackballRadius = cameraZoom/cameraVector.distanceTo(new THREE.Vector3(0,0,0)) * cameraZoom
 
     let sphere: THREE.Mesh;
 
@@ -188,7 +189,15 @@ export default {
       controls.minDistance = minCameraDistance
       controls.maxDistance = maxCameraDistance
 
-      controls.addEventListener( 'change', function () { renderer.render( scene, camera ); } );
+      controls.addEventListener( 'change', function (event) {
+        const newCameraTrackballRadius = cameraZoom/camera.position.distanceTo(new THREE.Vector3(0,0,0))
+        if (newCameraTrackballRadius !== cameraTrackballRadius) {
+          cameraTrackballRadius = newCameraTrackballRadius
+          controls?.setTbRadius(newCameraTrackballRadius)
+        }
+
+        renderer.render( scene, camera );
+      });
 
     }
 
@@ -206,5 +215,5 @@ export default {
 </script>
 
 <template>
-  <div id="container"></div>
+  <div id="container" class="cursor-pointer"></div>
 </template>
