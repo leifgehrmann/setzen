@@ -1,12 +1,12 @@
 <template>
-  <div class="overflow-scroll py-4 relative">
-    <svg class="h-16 px-4" :viewBox="`0 0 ${colors.length*50+50} ${86.6}`">
-      <g v-for="(color, index) in colors">
-        <polygon :points="points(index)" :fill="color" class="cursor-pointer pointer-events-auto" @click="log(index)"/>
-      </g>
-    </svg>
-
-    <!--<input v-for="(color, index) in colors"
+  <div class="overflow-scroll py-4 relative text-center">
+    <div class="inline-block">
+      <svg class="h-16 px-4" :viewBox="`0 0 ${colors.length*50+50} ${86.6}`">
+        <g v-for="(color, index) in colors">
+          <polygon :points="points(index)" :fill="color" class="cursor-pointer pointer-events-auto" @click="log(index)"/>
+        </g>
+      </svg>
+      <!--<input v-for="(color, index) in colors"
            :value="index"
            v-model="selectedIndex"
            name="color"
@@ -18,6 +18,7 @@
               left: `calc(${index * 2.31 + 3.3}rem - 10px)`
            }"
     >-->
+    </div>
   </div>
 <!--    <svg v-if="!up" class="h-10 absolute" viewBox="0 0 100 86.6"><polygon points="0,86.6 100,86.6 50,0" fill="#FFFFFF" @click="log" class="cursor-pointer pointer-events-auto"/></svg>-->
 <!--    <button v-if="up" class="rounded-lg bg-red-200 h-3 w-3 inset-full absolute"></button>-->
