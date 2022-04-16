@@ -51,6 +51,13 @@ export default {
     let controls: ArcballControls|null = null
 
     let cameraZoom = 390;
+    let sphereSize = 200;
+    let minCameraDistance = sphereSize/2 + 5
+    let maxCameraDistance = cameraZoom * 1.5
+    if (window.innerWidth < window.innerHeight) {
+      cameraZoom *= window.innerHeight/window.innerWidth
+      maxCameraDistance = cameraZoom * 1.5
+    }
     let cameraVector = new THREE.Vector3(Math.random(), Math.random(), Math.random()).normalize();
 
     let sphere: THREE.Mesh;
@@ -62,10 +69,6 @@ export default {
     init();
 
     function init() {
-
-      if (window.innerWidth < window.innerHeight) {
-        cameraZoom *= window.innerHeight/window.innerWidth
-      }
 
       camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 10000);
       camera.position.x = cameraVector.x * cameraZoom
@@ -113,7 +116,7 @@ export default {
       });
 
 
-      const radius = 100;
+      const radius = sphereSize/2;
 
       const geometry = new THREE.IcosahedronGeometry(radius, 224);
 
@@ -206,6 +209,8 @@ export default {
       controls = new ArcballControls( camera, renderer.domElement );
 
       controls.enablePan = false
+      controls.minDistance = minCameraDistance
+      controls.maxDistance = maxCameraDistance
 
       controls.addEventListener( 'change', function () { renderer.render( scene, camera ); } );
 
