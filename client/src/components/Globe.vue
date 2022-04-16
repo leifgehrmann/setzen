@@ -118,9 +118,9 @@ export default {
 
       const radius = 100;
 
-      const geometry = new THREE.IcosahedronGeometry(radius, 100);
+      const geometry = new THREE.IcosahedronGeometry(radius, 224);
 
-      console.log(geometry.attributes.position.count)
+      console.log(geometry.attributes.position.count/3)
       colorR = new Float32Array(geometry.attributes.position.count);
       colorG = new Float32Array(geometry.attributes.position.count);
       colorB = new Float32Array(geometry.attributes.position.count);
