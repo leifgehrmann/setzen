@@ -60,7 +60,7 @@ export default {
     let colorB: Float32Array;
 
     init();
-    animate();
+    renderer.render(scene, camera);
 
     function init() {
 
@@ -82,7 +82,7 @@ export default {
       });
 
       scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x050505);
+      scene.background = new THREE.Color(0x000000);
 
       const vertexShader = `
   attribute float colorR;
@@ -110,9 +110,7 @@ export default {
         vertexShader,
         fragmentShader,
         transparent: true,
-        blending: THREE.AdditiveBlending,
-        depthTest: false,
-        vertexColors: true
+        depthTest: false
       });
 
 
@@ -183,6 +181,7 @@ export default {
           sphere.geometry.attributes.colorR.needsUpdate = true;
           sphere.geometry.attributes.colorG.needsUpdate = true;
           sphere.geometry.attributes.colorB.needsUpdate = true;
+          renderer.render(scene, camera);
         }
       }
 
@@ -218,25 +217,7 @@ export default {
       camera.updateProjectionMatrix();
 
       renderer.setSize(window.innerWidth, window.innerHeight);
-
-    }
-
-    function animate() {
-
-      requestAnimationFrame(animate);
-
-      render();
-
-    }
-
-    function render() {
-      if (controls !== null) {
-        const tbRadius = cameraZoom/camera.position.distanceTo(new THREE.Vector3(0,0,0))
-        controls?.setTbRadius(tbRadius)
-      }
-
       renderer.render(scene, camera);
-
     }
   }
 }
