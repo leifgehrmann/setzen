@@ -51,6 +51,7 @@ export default {
     let controls: ArcballControls|null = null
 
     let cameraZoom = 390;
+    let sphereDetail = 224;
     let sphereSize = 200;
     let minCameraDistance = sphereSize/2 + 5
     let maxCameraDistance = cameraZoom * 1.5
@@ -119,7 +120,7 @@ export default {
 
       const radius = sphereSize/2;
 
-      const geometry = new THREE.IcosahedronGeometry(radius, 224);
+      const geometry = new THREE.IcosahedronGeometry(radius, sphereDetail);
 
       console.log(geometry.attributes.position.count/3)
       vertexColors = new Int32Array(geometry.attributes.position.count);
