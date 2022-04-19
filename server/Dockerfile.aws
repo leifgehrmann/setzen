@@ -1,0 +1,2 @@
+FROM amazon/aws-cli:2.2.29
+ENTRYPOINT []
