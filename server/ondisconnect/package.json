@@ -1,0 +1,12 @@
+{
+  "name": "on-disconnect",
+  "version": "1.0.0",
+  "description": "ondisconnect for WebSockets on API Gateway",
+  "main": "src/app.js",
+  "author": "Leif Gehrmann",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "aws-sdk": "^2.1118.0"
+  }
+}
