@@ -20,3 +20,5 @@ help:
 build: ## Builds the necessary docker images
 	docker build -t setzen-aws -f Dockerfile.aws .
 
+aws-shell:
+	 docker run -it --rm -v "$(PWD)":/var/opt -p "3000:3000" setzen-aws /bin/sh
