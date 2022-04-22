@@ -5,10 +5,26 @@ Description: >
   SAM Template for setzen-websockets-app that has the DynamoDB table and Lambda
   functions needed to create the Websocket protocol on API Gateway.
 Parameters:
-  TableName:
+  ConnectionsTableName:
     Type: String
     Default: 'setzen_connections'
     Description: (Required) The name of the new DynamoDB to store connection identifiers for each connected clients. Minimum 3 characters
+    MinLength: 3
+    MaxLength: 50
+    AllowedPattern: ^[A-Za-z_]+$
+    ConstraintDescription: 'Required. Can be characters and underscore only. No numbers or special characters allowed.'
+  StatesTableName:
+    Type: String
+    Default: 'setzen_states'
+    Description: (Required) The name of the new DynamoDB to store connection identifiers for each connected clients. Minimum 3 characters
+    MinLength: 3
+    MaxLength: 50
+    AllowedPattern: ^[A-Za-z_]+$
+    ConstraintDescription: 'Required. Can be characters and underscore only. No numbers or special characters allowed.'
+  UpdatesTableName:
+    Type: String
+    Default: 'setzen_updates'
+    Description: (Required) The name of the new DynamoDB to store updates to the state. Minimum 3 characters
     MinLength: 3
     MaxLength: 50
     AllowedPattern: ^[A-Za-z_]+$
@@ -110,7 +126,7 @@ Resources:
         WriteCapacityUnits: 5
       SSESpecification:
         SSEEnabled: True
-      TableName: !Ref TableName
+      TableName: !Ref ConnectionsTableName
   OnConnectFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -120,10 +136,10 @@ Resources:
       Runtime: nodejs12.x
       Environment:
         Variables:
-          TABLE_NAME: !Ref TableName
+          CONNECTIONS_TABLE_NAME: !Ref ConnectionsTableName
       Policies:
         - DynamoDBCrudPolicy:
-            TableName: !Ref TableName
+            TableName: !Ref ConnectionsTableName
   OnConnectPermission:
     Type: AWS::Lambda::Permission
     DependsOn:
@@ -141,10 +157,10 @@ Resources:
       Runtime: nodejs12.x
       Environment:
         Variables:
-          TABLE_NAME: !Ref TableName
+          CONNECTIONS_TABLE_NAME: !Ref ConnectionsTableName
       Policies:
         - DynamoDBCrudPolicy:
-            TableName: !Ref TableName
+            TableName: !Ref ConnectionsTableName
   OnDisconnectPermission:
     Type: AWS::Lambda::Permission
     DependsOn:
@@ -162,10 +178,12 @@ Resources:
       Runtime: nodejs12.x
       Environment:
         Variables:
-          TABLE_NAME: !Ref TableName
+          CONNECTIONS_TABLE_NAME: !Ref ConnectionsTableName
+          STATES_TABLE_NAME: !Ref StatesTableName
+          UPDATES_TABLE_NAME: !Ref UpdatesTableName
       Policies:
         - DynamoDBCrudPolicy:
-            TableName: !Ref TableName
+            TableName: !Ref ConnectionsTableName
         - Statement:
             - Effect: Allow
               Action:
