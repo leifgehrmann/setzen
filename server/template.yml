@@ -13,10 +13,18 @@ Parameters:
     MaxLength: 50
     AllowedPattern: ^[A-Za-z_]+$
     ConstraintDescription: 'Required. Can be characters and underscore only. No numbers or special characters allowed.'
-  StatesTableName:
+  ChunksTableName:
     Type: String
-    Default: 'setzen_states'
-    Description: (Required) The name of the new DynamoDB to store connection identifiers for each connected clients. Minimum 3 characters
+    Default: 'setzen_chunks'
+    Description: (Required) The name of the new DynamoDB to store chunk state. Minimum 3 characters
+    MinLength: 3
+    MaxLength: 50
+    AllowedPattern: ^[A-Za-z_]+$
+    ConstraintDescription: 'Required. Can be characters and underscore only. No numbers or special characters allowed.'
+  ChunkLocksTableName:
+    Type: String
+    Default: 'setzen_chunk_locks'
+    Description: (Required) The name of the new DynamoDB to store the lock state of the chunks. Minimum 3 characters
     MinLength: 3
     MaxLength: 50
     AllowedPattern: ^[A-Za-z_]+$
@@ -24,7 +32,15 @@ Parameters:
   UpdatesTableName:
     Type: String
     Default: 'setzen_updates'
-    Description: (Required) The name of the new DynamoDB to store updates to the state. Minimum 3 characters
+    Description: (Required) The name of the new DynamoDB to store all updates. Minimum 3 characters
+    MinLength: 3
+    MaxLength: 50
+    AllowedPattern: ^[A-Za-z_]+$
+    ConstraintDescription: 'Required. Can be characters and underscore only. No numbers or special characters allowed.'
+  QueueTableName:
+    Type: String
+    Default: 'setzen_queue'
+    Description: (Required) The name of the new DynamoDB to store all queued updates that will be persisted to the chunks table. Minimum 3 characters
     MinLength: 3
     MaxLength: 50
     AllowedPattern: ^[A-Za-z_]+$
@@ -127,6 +143,91 @@ Resources:
       SSESpecification:
         SSEEnabled: True
       TableName: !Ref ConnectionsTableName
+  ChunksTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: "chunkId"
+          AttributeType: "N"
+        # - AttributeName: "colorIds"
+        #   AttributeType: "B"
+        # - AttributeName: "lastUpdatedAt"
+        #   AttributeType: "N" # Unix time in milliseconds
+      KeySchema:
+        - AttributeName: "chunkId"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      SSESpecification:
+        SSEEnabled: True
+      TableName: !Ref ChunksTableName
+  ChunkLocksTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      # To avoid unnecessarily reading/writing to the Chunks table, we store
+      # the lock data in this table.
+      AttributeDefinitions:
+        - AttributeName: "chunkId"
+          AttributeType: "N"
+        # - AttributeName: "lockedAt"
+        #   AttributeType: "N" # Unix time in milliseconds
+      KeySchema:
+        - AttributeName: "chunkId"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      SSESpecification:
+        SSEEnabled: True
+      TableName: !Ref ChunkLocksTableName
+  UpdatesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        # This table is likely to store millions of entries.
+        # Attribute names are kept short to reduce amount of storage used.
+        - AttributeName: "i" # Item UUID
+          AttributeType: "S"
+        # - AttributeName: "a" # Author (Currently just the Connection ID)
+        #   AttributeType: "S"
+        # - AttributeName: "p" # Position
+        #   AttributeType: "N"
+        # - AttributeName: "c" # Color ID
+        #   AttributeType: "N"
+        # - AttributeName: "t" # Time
+        #   AttributeType: "N" # Unix time in milliseconds
+      KeySchema:
+        - AttributeName: "i"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      SSESpecification:
+        SSEEnabled: True
+      TableName: !Ref UpdatesTableName
+  QueueTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        # If the same position is updated by different processes we do not expect an entry
+        # to exist more than once in the queue. Therefore we can safely use the position
+        # as the key.
+        - AttributeName: "position"
+          AttributeType: "N"
+        # - AttributeName: "colorId"
+        #   AttributeType: "N"
+        # - AttributeName: "time"
+        #   AttributeType: "N" # Unix time in milliseconds
+      KeySchema:
+        - AttributeName: "position"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      SSESpecification:
+        SSEEnabled: True
+      TableName: !Ref QueueTableName
   OnConnectFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -179,11 +280,21 @@ Resources:
       Environment:
         Variables:
           CONNECTIONS_TABLE_NAME: !Ref ConnectionsTableName
-          STATES_TABLE_NAME: !Ref StatesTableName
+          CHUNKS_TABLE_NAME: !Ref ChunksTableName
+          CHUNK_LOCKS_TABLE_NAME: !Ref ChunkLocksTableName
           UPDATES_TABLE_NAME: !Ref UpdatesTableName
+          QUEUE_TABLE_NAME: !Ref QueueTableName
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref ConnectionsTableName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ChunksTableName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ChunkLocksTableName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UpdatesTableName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref QueueTableName
         - Statement:
             - Effect: Allow
               Action:
