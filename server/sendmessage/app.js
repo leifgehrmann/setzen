@@ -1,4 +1,5 @@
 const AWS = require('aws-sdk');
+const crypto = require('crypto');
 
 const ddb = new AWS.DynamoDB.DocumentClient({ apiVersion: '2012-08-10', region: process.env.AWS_REGION });
 
@@ -16,6 +17,51 @@ const TOTAL_COLOR_IDS = 31;
 // the websocket frame size limit of 32KB.
 // Base64 encoding 16875 bytes results in 22443 Bytes.
 const CHUNK_SIZE = 16875; // 1012500 / 20 / 3
+
+/**
+ * @param {string} connectionId
+ * @param {{position: number, colorId: number, time: number}} updateData
+ * @returns {Promise<{body: string, statusCode: number}>}
+ */
+const addToUpdates = async (connectionId, updateData) => {
+  const putParams = {
+    TableName: UPDATES_TABLE_NAME,
+    Item: {
+      i: crypto.randomUUID(),
+      a: connectionId,
+      p: updateData.position,
+      c: updateData.colorId,
+      t: updateData.time
+    }
+  };
+
+  try {
+    await ddb.put(putParams).promise();
+  } catch (err) {
+    return { statusCode: 500, body: 'Failed to connect: ' + JSON.stringify(err) };
+  }
+}
+
+/**
+ * @param {{position: number, colorId: number, time: number}} updateData
+ * @returns {Promise<{body: string, statusCode: number}>}
+ */
+const addToQueue = async (updateData) => {
+  const updateParams = {
+    TableName: QUEUE_TABLE_NAME,
+    Item: {
+      position: updateData.position,
+      colorId: updateData.colorId,
+      time: updateData.time
+    }
+  };
+
+  try {
+    await ddb.put(updateParams).promise();
+  } catch (err) {
+    return { statusCode: 500, body: 'Failed to connect: ' + JSON.stringify(err) };
+  }
+}
 
 /**
  *
@@ -165,8 +211,13 @@ exports.handler = async event => {
         time: Date.now()
       }
 
-      const addToUpdatesPromise = Promise.resolve() // Todo: Add item to updates
-      const addToQueuePromise = Promise.resolve() // Todo: Add item to queue
+      const addToUpdatesPromise = addToUpdates(
+        event.requestContext.connectionId,
+        updateData
+      )
+      const addToQueuePromise = addToQueue(
+        updateData
+      )
 
       try {
         await Promise.all([addToUpdatesPromise, addToQueuePromise]);
