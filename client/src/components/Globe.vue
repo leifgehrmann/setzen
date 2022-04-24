@@ -131,7 +131,7 @@ void main() {
       // if there is one (or more) intersections
       if ( intersects.length > 0 ) {
         const face = intersects[ 0 ].face as THREE.Face;
-        // this.emit('selectPosition', Math.round(face.a / 3))
+        emit('selectPosition', Math.round(face.a / 3))
       }
     }
 
