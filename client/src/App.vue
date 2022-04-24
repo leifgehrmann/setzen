@@ -18,14 +18,17 @@ let selectedPosition = ref(null as number|null)
 
 initState(sphereFaceCount)
 
-function selectPosition(position: number) {
+function selectPosition(position: number|null) {
   console.log('selectPosition', position)
   selectedPosition.value = position
 }
 
 function updateColorId(colorId: number) {
-  console.log('updateColorId', selectedPosition.value, colorId)
-  update(selectedPosition.value, colorId)
+  const position = selectedPosition.value
+  if (position !== null) {
+    console.log('updateColorId', position, colorId)
+    update(position, colorId)
+  }
 }
 
 onMounted(() => {
