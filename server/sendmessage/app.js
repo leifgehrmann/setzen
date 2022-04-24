@@ -17,6 +17,8 @@ const TOTAL_COLOR_IDS = 31;
 // the websocket frame size limit of 32KB.
 // Base64 encoding 16875 bytes results in 22443 Bytes.
 const CHUNK_SIZE = 16875; // 1012500 / 20 / 3
+const CHUNK_LOCK_EXPIRATION = 60 * 1000; // 60 seconds
+const UPDATE_CHUNK_QUEUE_SIZE_THRESHOLD = 3;
 
 /**
  * @param {string} connectionId
@@ -64,6 +66,132 @@ const addToQueue = async (updateData) => {
 }
 
 /**
+ * @returns {Promise}
+ */
+const updateChunk = async () => {
+  // Grab all items in the QueueTable.
+  let queueData = await ddb.scan({
+    TableName: QUEUE_TABLE_NAME,
+    // Due to a limitation of DynamoDB, the reserved words 'position'
+    // and 'time' need to be expressed as ExpressionAttributeNames.
+    ProjectionExpression: '#p, colorId, #t',
+    ExpressionAttributeNames: {
+      '#p': 'position',
+      '#t': 'time',
+    }
+  }).promise();
+
+  // Only start processing queue if there are more than a few elements.
+  // This is to minimise write requests to the database.
+  if (queueData.Count < UPDATE_CHUNK_QUEUE_SIZE_THRESHOLD) {
+    return
+  }
+
+  // Get the ChunkId for any random item and query the ChunkLocks Table for the chunkId.
+  // If the ChunkLock is locked, and the locked timestamp was within 1 minute, exit.
+  const queueItemIndex = Math.floor(queueData.Count * Math.random())
+  const chunkId = getChunkIdForPosition(queueData.Items[queueItemIndex].position)
+  const lockedAtExpires = Date.now() - CHUNK_LOCK_EXPIRATION
+  try {
+    await ddb.put({
+      TableName: CHUNK_LOCKS_TABLE_NAME,
+      Item: {
+        chunkId: chunkId,
+        lockedAt: Date.now()
+      },
+      ConditionExpression: `attribute_not_exists(chunkId) OR lockedAt < :locked_at_expires`,
+      ExpressionAttributeValues: {
+        ':locked_at_expires': lockedAtExpires
+      }
+    }).promise();
+  } catch (err) {
+    return
+  }
+
+  // Query the Chunks table for the ChunkId.
+  const chunkData = await ddb.get({
+    TableName: CHUNKS_TABLE_NAME,
+    Key: {chunkId: chunkId}
+  }).promise();
+  if (chunkData.Item === undefined) {
+    // Reset the chunkLock if there is no chunk.
+    await ddb.delete({
+      TableName: CHUNK_LOCKS_TABLE_NAME,
+      Key: { chunkId: chunkId }
+    }).promise();
+    return
+  }
+
+  const uint8Array = new Uint8Array(Buffer.from(chunkData.Item.colorIds, 'base64'));
+  const oldLastUpdatedAt = chunkData.Item.lastUpdatedAt
+  let newLastUpdatedAt = oldLastUpdatedAt
+
+  // For every queued item with same chunkId, update the chunk data
+  const queueKeysToDelete = []
+  queueData.Items.forEach((item) => {
+    const chunkIdForItem = getChunkIdForPosition(item.position)
+    if (chunkIdForItem !== chunkId) {
+      // Skip this item because it is not in the chunk.
+      return
+    }
+
+    // Only update the color if the time is greater than the
+    // chunk's last-update.
+    const time = item.time
+    if (time >= oldLastUpdatedAt) {
+      const indexWithinChunk = getIndexWithinChunkForPosition(item.position)
+      uint8Array[indexWithinChunk] = item.colorId
+      newLastUpdatedAt = Math.max(newLastUpdatedAt, time)
+    }
+
+    queueKeysToDelete.push(item.position)
+  })
+
+  // 8. Store the new chunk value.
+  try {
+    const colorIdsBase64 = Buffer.from(uint8Array.buffer).toString('base64')
+    await ddb.put({
+      TableName: CHUNKS_TABLE_NAME,
+      Item: {
+        chunkId: chunkId,
+        colorIds: colorIdsBase64,
+        lastUpdatedAt: newLastUpdatedAt
+      }
+    }).promise();
+  } catch (err) {
+    console.error('Failed to put chunk. ' + err.message)
+    return
+  }
+  // Delete the queued items that were processed. batchWrite only supports
+  // 25 requests at a time, so we need to send them in chunks of 25.
+  try {
+    for (let i=0; i<queueKeysToDelete.length; i+= 25) {
+      const queueDeleteRequests = queueKeysToDelete.slice(i, 25).map((key) => {
+        return {
+          DeleteRequest: {
+            Key: { position: key }
+          }
+        }
+      })
+      await ddb.batchWrite({
+        RequestItems: {
+          [QUEUE_TABLE_NAME]: queueDeleteRequests
+        }
+      }).promise()
+    }
+  } catch (err) {
+    console.error('Failed to delete queue items. ' + err.message)
+    return
+  }
+
+  // Delete the chunkLock.
+  await ddb.delete({
+    TableName: CHUNK_LOCKS_TABLE_NAME,
+    Key: { chunkId: chunkId }
+  }).promise();
+}
+
+/**
  *
  * @param {AWS.ApiGatewayManagementApi} apigwManagementApi
  * @param {{position: number, colorId: number, time: number}} updateData
@@ -98,7 +226,7 @@ const broadcastUpdateEvent = async (
 /**
  * @param {AWS.ApiGatewayManagementApi} apigwManagementApi
  * @param {string} connectionId
- * @param {unknown} chunkData
+ * @param {{chunkId: number, colorIds: string, lastUpdatedAt: number}} chunkData
  * @returns {Promise<void>}
  */
 const narrowcastChunkData = async (
@@ -116,7 +244,7 @@ const narrowcastChunkData = async (
 /**
  * @param {AWS.ApiGatewayManagementApi} apigwManagementApi
  * @param {string} connectionId
- * @param {unknown} queueData
+ * @param {{positions: number[], colorIds: number[], times: number[]}} queueData
  * @returns {Promise<void>}
  */
 const narrowcastQueueData = async (
@@ -129,6 +257,22 @@ const narrowcastQueueData = async (
     data: queueData
   })
   await apigwManagementApi.postToConnection({ ConnectionId: connectionId, Data: data }).promise();
+}
+
+/**
+ * @param {number} position
+ * @returns {number}
+ */
+const getChunkIdForPosition = (position) => {
+  return Math.floor(position / CHUNK_SIZE)
+}
+
+/**
+ * @param {number} position
+ * @returns {number}
+ */
+const getIndexWithinChunkForPosition = (position) => {
+  return position % CHUNK_SIZE
 }
 
 /**
@@ -165,9 +309,12 @@ const validColorId = (colorId) => {
 }
 
 exports.handler = async event => {
+  const connectionId = event.requestContext.connectionId
+  const domainName = event.requestContext.domainName
+  const stage = event.requestContext.stage
   const apigwManagementApi = new AWS.ApiGatewayManagementApi({
     apiVersion: '2018-11-29',
-    endpoint: event.requestContext.domainName + '/' + event.requestContext.stage
+    endpoint: domainName + '/' + stage
   });
 
   const postData = JSON.parse(event.body).data;
@@ -177,23 +324,63 @@ exports.handler = async event => {
       if (!validChunkId(postData.chunkId)) {
         return { statusCode: 400, body: 'Invalid chunkId.' };
       }
-      // Todo: Read the chunk from DynamoDB
-      const chunkData = { chunkId: 0, colorIdsBase64: 'SGVsbG8gV29ybGQ=' }
       try {
-        await narrowcastChunkData(apigwManagementApi, event.requestContext.connectionId, chunkData);
+        const chunkData = await ddb.get({
+          TableName: CHUNKS_TABLE_NAME,
+          Key: { chunkId: postData.chunkId }
+        }).promise();
+        let chunkItem = chunkData.Item
+        // If a Chunk does not exist, we will populate the table
+        // with a bunch of fake values.
+        if (chunkItem === undefined) {
+          const colorIds = new Uint8Array(CHUNK_SIZE)
+          for (let i = 0; i<CHUNK_SIZE; i++) {
+            colorIds[i] = Math.floor(Math.random() * TOTAL_COLOR_IDS)
+          }
+          const colorIdsBase64 = Buffer.from(colorIds.buffer).toString('base64')
+          chunkItem = {
+            chunkId: postData.chunkId,
+            colorIds: colorIdsBase64,
+            lastUpdatedAt: Date.now()
+          }
+          await ddb.put({
+            TableName: CHUNKS_TABLE_NAME,
+            Item: chunkItem
+          }).promise();
+        }
+        await narrowcastChunkData(
+          apigwManagementApi,
+          connectionId,
+          chunkItem
+        );
       } catch (e) {
         return { statusCode: 500, body: e.stack };
       }
       return { statusCode: 200, body: 'Data sent.' };
     case 'readQueue':
-      // Todo: Read the queue from DynamoDB
-      const queueData = [{
-        position: 1,
-        colorId: 1,
-        time: 1
-      }]
       try {
-        await narrowcastQueueData(apigwManagementApi, event.requestContext.connectionId, queueData);
+        // In theory, only 1MB of results will be returned by a single
+        // scan. This is okay as we are hoping the queue won't build up
+        // too much.
+        let queueData = await ddb.scan({
+          TableName: QUEUE_TABLE_NAME,
+          ProjectionExpression: '#p, colorId, #t',
+          ExpressionAttributeNames: {
+            '#p': 'position',
+            '#t': 'time',
+          }
+        }).promise();
+        if (queueData.Count !== 0) {
+          await narrowcastQueueData(
+            apigwManagementApi,
+            connectionId,
+            {
+              positions: queueData.Items.map((item) => item.position),
+              colorIds: queueData.Items.map((item) => item.colorId),
+              times: queueData.Items.map((item) => item.time)
+            }
+          );
+        }
       } catch (e) {
         return { statusCode: 500, body: e.stack };
       }
@@ -212,7 +399,7 @@ exports.handler = async event => {
       }
 
       const addToUpdatesPromise = addToUpdates(
-        event.requestContext.connectionId,
+        connectionId,
         updateData
       )
       const addToQueuePromise = addToQueue(
@@ -227,13 +414,9 @@ exports.handler = async event => {
 
       let promises = []
       promises.push(broadcastUpdateEvent(apigwManagementApi, updateData))
-      const updateChunkPromise = Promise.resolve() // Todo
+      const updateChunkPromise = updateChunk()
       promises.push(updateChunkPromise)
-      try {
-        await Promise.all(promises);
-      } catch (e) {
-        return { statusCode: 200, body: 'Data sent, but encountered an error: ' + e.stack };
-      }
+      await Promise.allSettled(promises);
       return { statusCode: 200, body: 'Data sent.' };
     default:
       return { statusCode: 400, body: 'Invalid type.' };
