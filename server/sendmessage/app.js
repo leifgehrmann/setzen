@@ -12,7 +12,7 @@ const {
 } = process.env;
 
 const TOTAL_POSITIONS = 1012500;
-const TOTAL_COLOR_IDS = 31;
+const TOTAL_COLOR_IDS = 32;
 // Chunk size was deliberately chosen to be within
 // the websocket frame size limit of 32KB.
 // Base64 encoding 16875 bytes results in 22443 Bytes.
