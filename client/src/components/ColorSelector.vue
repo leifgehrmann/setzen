@@ -34,6 +34,8 @@ const props = defineProps({
   up: Boolean
 });
 
+const emit = defineEmits(['selectColorId'])
+
 let selectedIndex = ref(0)
 
 function points(index: number): string {
@@ -49,9 +51,10 @@ function points(index: number): string {
   return `${lx},${ty} ${mx},${by} ${rx},${ty}`
 }
 
-function log(index: number) {
+const log = (index: number) => {
   selectedIndex = ref(index)
   console.log(index)
+  emit('selectColorId', index)
 }
 </script>
 

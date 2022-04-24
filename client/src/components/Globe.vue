@@ -2,24 +2,42 @@
 import * as THREE from 'three';
 import {ArcballControls} from "three/examples/jsm/controls/ArcballControls";
 import { colors } from "../utils/colors"
+import { addUpdateListener, addUpdateBulkListener, stateColorIds } from "../utils/state"
 
+let renderer: THREE.Renderer, scene: THREE.Scene, camera: THREE.Camera;
+let sphere: THREE.Mesh;
+let vertexColors: Int32Array;
 
+addUpdateListener((position, colorId) => {
+  let color = parseInt('0x' + colors[colorId].substring(1))
+  vertexColors[position * 3] = color
+  vertexColors[position * 3 + 1] = color
+  vertexColors[position * 3 + 2] = color
+  sphere.geometry.attributes.vertexColor.needsUpdate = true;
+  renderer.render(scene, camera);
+})
 
-var seed = 1;
-function myRandom() {
-  var x = Math.sin(seed++) * 10000;
-  return x - Math.floor(x);
-}
+addUpdateBulkListener(() => {
+  for (let i = 0; i < vertexColors.length; i+=3) {
+    let color = parseInt('0x' + colors[stateColorIds[i/3]].substring(1))
+    vertexColors[i] = color
+    vertexColors[i+1] = color
+    vertexColors[i+2] = color
+  }
+  sphere.geometry.attributes.vertexColor.needsUpdate = true;
+  renderer.render(scene, camera);
+})
 
 export default {
+  props: {
+    sphereDetail: Number,
+    selectedPosition: Number,
+  },
   mounted() {
-
-    let renderer: THREE.Renderer, scene: THREE.Scene, camera: THREE.Camera;
-
     let controls: ArcballControls|null = null
 
     let cameraZoom = 390;
-    let sphereDetail = 224;
+    let sphereDetail = this.sphereDetail;
     let sphereSize = 200;
     let minCameraDistance = sphereSize/2 + 5
     let maxCameraDistance = cameraZoom * 1.5
@@ -30,13 +48,7 @@ export default {
     let cameraVector = new THREE.Vector3(Math.random(), Math.random(), Math.random()).normalize();
     let cameraTrackballRadius = cameraZoom/cameraVector.distanceTo(new THREE.Vector3(0,0,0)) * cameraZoom
 
-    let sphere: THREE.Mesh;
-
-    let vertexColors: Int32Array;
-
-    init();
-
-    function init() {
+    const init = () => {
 
       camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 10000);
       camera.position.x = cameraVector.x * cameraZoom
@@ -94,41 +106,24 @@ export default {
       console.log(geometry.attributes.position.count/3)
       vertexColors = new Int32Array(geometry.attributes.position.count);
 
-      for (let i = 0; i < vertexColors.length; i+=3) {
-
-        let color = parseInt('0x' + colors[Math.floor(myRandom() * colors.length)].substring(1))
-
-        vertexColors[i] = color
-        vertexColors[i+1] = color
-        vertexColors[i+2] = color
-      }
-
       geometry.setAttribute('vertexColor', new THREE.BufferAttribute(vertexColors, 1));
 
       sphere = new THREE.Mesh(geometry, shaderMaterial);
       scene.add(sphere);
 
-      function triangleClick(event: MouseEvent) {
+      const triangleClick = (event: MouseEvent) => {
         console.log("Click.");
         const mouseX = ( event.clientX / window.innerWidth ) * 2 - 1;
         const mouseY = - ( event.clientY / window.innerHeight ) * 2 + 1;
         const mouse = new THREE.Vector2( mouseX, mouseY);
 
         raycaster.setFromCamera( mouse, camera );
-        var intersects = raycaster.intersectObjects( [sphere], true );
+        const intersects = raycaster.intersectObjects( [sphere], true );
 
         // if there is one (or more) intersections
-        console.log(intersects)
         if ( intersects.length > 0 ) {
           const face = intersects[ 0 ].face as THREE.Face;
-
-          let color = parseInt('0x' + colors[Math.floor(myRandom() * colors.length /6)].substring(1))
-
-          vertexColors[face.a] = color
-          vertexColors[face.b] = color
-          vertexColors[face.c] = color
-          sphere.geometry.attributes.vertexColor.needsUpdate = true;
-          renderer.render(scene, camera);
+          this.$emit('selectPosition', face.a / 3)
         }
       }
 
@@ -157,7 +152,7 @@ export default {
       controls.minDistance = minCameraDistance
       controls.maxDistance = maxCameraDistance
 
-      controls.addEventListener( 'change', function (event) {
+      controls.addEventListener( 'change', function () {
         const newCameraTrackballRadius = cameraZoom/camera.position.distanceTo(new THREE.Vector3(0,0,0))
         if (newCameraTrackballRadius !== cameraTrackballRadius) {
           cameraTrackballRadius = newCameraTrackballRadius
@@ -178,6 +173,8 @@ export default {
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.render(scene, camera);
     }
+
+    init();
   }
 }
 </script>
