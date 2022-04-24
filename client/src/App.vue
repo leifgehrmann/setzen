@@ -19,7 +19,6 @@ let selectedPosition = ref(null as number|null)
 initState(sphereFaceCount, chunkSize)
 
 function selectPosition(position: number|null) {
-  console.log('selectPosition', position)
   selectedPosition.value = position
 }
 

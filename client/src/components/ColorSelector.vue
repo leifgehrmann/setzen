@@ -53,7 +53,6 @@ function points(index: number): string {
 
 const log = (index: number) => {
   selectedIndex = ref(index)
-  console.log(index)
   emit('selectColorId', index)
 }
 </script>

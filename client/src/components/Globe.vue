@@ -120,7 +120,6 @@ void main() {
     scene.add(sphere);
 
     const triangleClick = (event: MouseEvent) => {
-      console.log("Click.");
       const mouseX = ( event.clientX / window.innerWidth ) * 2 - 1;
       const mouseY = - ( event.clientY / window.innerHeight ) * 2 + 1;
       const mouse = new THREE.Vector2( mouseX, mouseY);
