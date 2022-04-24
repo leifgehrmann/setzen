@@ -40,7 +40,7 @@ export function initWebSocket(openCallback: Function): Ref<boolean> {
         }
         break
       case 'update':
-        update(message.position, message.colorId, message.time)
+        update(message.data.position, message.data.colorId, message.data.time)
         break
     }
   })
