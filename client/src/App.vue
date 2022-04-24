@@ -3,10 +3,10 @@ import './index.css'
 import Globe from './components/Globe.vue'
 import ColorSelector from "./components/ColorSelector.vue";
 
-import { colors } from './utils/colors';
 import { initState, update, updateBulk } from './utils/state';
 
 import { ref, onMounted } from 'vue'
+import {initWebSocket, synchronise, requestUpdate} from "./utils/webSocket";
 
 let sphereDetail = 224
 let sphereFaceCount = 20 * (sphereDetail + 1) * (sphereDetail + 1)
@@ -16,7 +16,7 @@ let loaded = ref(false)
 let connected = ref(false)
 let selectedPosition = ref(null as number|null)
 
-initState(sphereFaceCount)
+initState(sphereFaceCount, chunkSize)
 
 function selectPosition(position: number|null) {
   console.log('selectPosition', position)
@@ -28,21 +28,17 @@ function updateColorId(colorId: number) {
   if (position !== null) {
     console.log('updateColorId', position, colorId)
     update(position, colorId)
+    requestUpdate(position, colorId)
   }
 }
 
 onMounted(() => {
-  let seed = 1;
-  function myRandom() {
-    const x = Math.sin(seed++) * 10000;
-    return x - Math.floor(x);
-  }
-
   const newColorIds = new Uint8Array(sphereFaceCount)
-  for (let i = 0; i < sphereFaceCount; i+=1) {
-    newColorIds[i] = Math.floor(myRandom() * colors.length)
-  }
   updateBulk(0, newColorIds, Date.now())
+
+  initWebSocket(() => {
+    synchronise(1)
+  })
 })
 
 </script>
@@ -59,7 +55,7 @@ onMounted(() => {
       class="absolute bottom-0 w-full"
   >
     <div class="bg-neutral-800/70 w-full text-neutral-200 backdrop-blur-md">
-      <div @click="selectPosition(null)">close</div>
+      <span @click="selectPosition(null)">close</span>
 <!--      <div id="rotate">Rotate</div>-->
       <ColorSelector @select-color-id="updateColorId"/>
     </div>
