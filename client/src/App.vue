@@ -57,18 +57,26 @@ onMounted(() => {
       :selected-position="selectedPosition"
       @select-position="selectPosition"
   />
-  <div class="absolute top-0 p-4">
-    <div class="p-4 bg-neutral-800/70 w-full text-neutral-200 backdrop-blur-md rounded-lg">
+  <div class="absolute top-0 p-4 pointer-events-none cursor-default">
+    <div class="px-4 py-2 bg-neutral-800/70 w-full text-neutral-200 backdrop-blur-md rounded-lg">
       <WebSocket :connected="connected"/>
     </div>
+  </div>
+  <div
+      v-if="selectedPosition !== null"
+      class="absolute bottom-28 p-4 select-none pointer-events-none"
+  >
+    <button
+        @click="selectPosition(null)"
+        class="px-4 py-2 bg-neutral-800/70 text-neutral-200 backdrop-blur-md rounded-lg text-center pointer-events-auto">
+      X
+    </button>
   </div>
   <div
       v-if="selectedPosition !== null"
       class="absolute bottom-0 w-full"
   >
     <div class="bg-neutral-800/70 w-full text-neutral-200 backdrop-blur-md">
-      <span @click="selectPosition(null)">close</span>
-<!--      <div id="rotate">Rotate</div>-->
       <ColorSelector @select-color-id="updateColorId"/>
     </div>
   </div>
