@@ -2,8 +2,9 @@
 import './index.css'
 import Globe from './components/Globe.vue'
 import ColorSelector from "./components/ColorSelector.vue";
+import WebSocket from "./components/WebSocket.vue";
 
-import { initState, update, updateBulk } from './utils/state';
+import { initState, update, updateRange } from './utils/state';
 
 import { ref, onMounted } from 'vue'
 import {initWebSocket, synchronise, requestUpdate} from "./utils/webSocket";
@@ -11,6 +12,7 @@ import {initWebSocket, synchronise, requestUpdate} from "./utils/webSocket";
 let sphereDetail = 224
 let sphereFaceCount = 20 * (sphereDetail + 1) * (sphereDetail + 1)
 let chunkSize = 16875 // See /server/sendmessage/app.js
+let totalChunks = Math.ceil(sphereFaceCount / chunkSize)
 
 let loaded = ref(false)
 let connected = ref(false)
@@ -24,6 +26,9 @@ function selectPosition(position: number|null) {
 
 function updateColorId(colorId: number) {
   const position = selectedPosition.value
+  if (!connected.value) {
+    console.error('Cannot send update while disconnected.')
+  }
   if (position !== null) {
     console.log('updateColorId', position, colorId)
     update(position, colorId)
@@ -33,10 +38,13 @@ function updateColorId(colorId: number) {
 
 onMounted(() => {
   const newColorIds = new Uint8Array(sphereFaceCount)
-  updateBulk(0, newColorIds, Date.now())
+  updateRange(0, newColorIds, Date.now())
 
   initWebSocket(() => {
-    synchronise(1)
+    synchronise(totalChunks)
+    connected.value = true
+  },() => {
+    connected.value = false
   })
 })
 
@@ -49,6 +57,11 @@ onMounted(() => {
       :selected-position="selectedPosition"
       @select-position="selectPosition"
   />
+  <div class="absolute top-0 p-4">
+    <div class="p-4 bg-neutral-800/70 w-full text-neutral-200 backdrop-blur-md rounded-lg">
+      <WebSocket :connected="connected"/>
+    </div>
+  </div>
   <div
       v-if="selectedPosition !== null"
       class="absolute bottom-0 w-full"

@@ -1,5 +1,4 @@
-import {Ref, ref} from "vue";
-import {update, updateChunk} from "./state";
+import {triggerBulkUpdate, update, updateChunk} from "./state";
 
 let webSocket: WebSocket|null
 let chunkLoadingId: number = 0
@@ -7,18 +6,15 @@ let chunkLoadingCallback: (value: void | PromiseLike<void>) => void = () => {}
 let chunkLoadingTimeout = 5000
 let chunkLoadingMaxAttempts = 5
 
-let connected = ref(false)
-
-export function initWebSocket(openCallback: Function): Ref<boolean> {
+export function initWebSocket(openCallback: Function, closeCallback: Function) {
   // `webSocketHost` is defined by vite.config.ts.
   // @ts-ignore
   webSocket = new WebSocket(webSocketHost)
   webSocket.addEventListener('open', () => {
-    connected.value = true
     openCallback()
   })
   webSocket.addEventListener('close', () => {
-    connected.value = false
+    closeCallback()
   })
   webSocket.addEventListener('message', (event) => {
     const message = JSON.parse(event.data)
@@ -44,7 +40,6 @@ export function initWebSocket(openCallback: Function): Ref<boolean> {
         break
     }
   })
-  return connected
 }
 
 export async function synchronise(totalChunks: number): Promise<void> {
@@ -59,6 +54,8 @@ export async function synchronise(totalChunks: number): Promise<void> {
   for (let chunkId = 0; chunkId < totalChunks; chunkId++) {
     await requestChunkData(webSocket, chunkId)
   }
+
+  triggerBulkUpdate()
 }
 
 export async function requestUpdate(position: number, colorId: number): Promise<void> {
@@ -78,6 +75,7 @@ async function requestChunkData(webSocket: WebSocket, chunkId: number): Promise<
     try {
       await (new Promise((resolve, reject) => {
         chunkLoadingCallback = resolve
+        chunkLoadingId = chunkId
         webSocket.send(JSON.stringify({"action": "sendmessage", "data": {"type": "readChunk", "chunkId": chunkId}}))
         setTimeout(() => {
           reject()

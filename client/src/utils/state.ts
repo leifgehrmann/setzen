@@ -40,10 +40,10 @@ export const updateChunk = (
 ) => {
   const newColorIds = Uint8Array.from(atob(newColorIdsBase64), c => c.charCodeAt(0))
   const offset = chunkId * stateChunkSize
-  updateBulk(offset, newColorIds, newTime)
+  updateRange(offset, newColorIds, newTime)
 }
 
-export const updateBulk = (
+export const updateRange = (
   offset: number,
   newColorIds: Uint8Array,
   newTime: number
@@ -56,6 +56,9 @@ export const updateBulk = (
     stateColorIds[position] = newColorIds[position - offset]
     stateTimes[position] = newTime
   }
+}
+
+export const triggerBulkUpdate = () => {
   updateBulkListeners.forEach((listener) => {
     listener()
   })
