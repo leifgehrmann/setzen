@@ -2,19 +2,18 @@
 import './index.css'
 import Globe from './components/Globe.vue'
 import ColorSelector from "./components/ColorSelector.vue";
-import WebSocket from "./components/WebSocket.vue";
-
-import { initState, update, updateRange } from './utils/state';
+import WebSocketState from "./components/WebSocketState.vue";
 
 import { ref, onMounted } from 'vue'
-import {initWebSocket, synchronise, requestUpdate} from "./utils/webSocket";
 
 let sphereDetail = 224
+import { initState, update, updateRange } from './utils/state';
+import { initWebSocket, synchronise, requestUpdate } from "./utils/webSocket";
+
 let sphereFaceCount = 20 * (sphereDetail + 1) * (sphereDetail + 1)
 let chunkSize = 16875 // See /server/sendmessage/app.js
-let totalChunks = Math.ceil(sphereFaceCount / chunkSize)
 
-let loaded = ref(false)
+let percentLoaded = ref(0)
 let connected = ref(false)
 let selectedPosition = ref(null as number|null)
 
@@ -28,24 +27,35 @@ function updateColorId(colorId: number) {
   const position = selectedPosition.value
   if (!connected.value) {
     console.error('Cannot send update while disconnected.')
+    return
   }
   if (position !== null) {
     console.log('updateColorId', position, colorId)
-    update(position, colorId)
     requestUpdate(position, colorId)
+    setTimeout(() => {
+      if (!connected.value) {
+        console.error('Cannot send update while disconnected.')
+        return
+      }
+      update(position, colorId)
+    }, 100)
   }
+}
+
+function startWebSocket() {
+  initWebSocket(() => {
+    synchronise((newPercentLoaded) => {
+      percentLoaded.value = newPercentLoaded
+    })
+    connected.value = true
+  },() => {
+    connected.value = false
+  })
 }
 
 onMounted(() => {
   const newColorIds = new Uint8Array(sphereFaceCount)
   updateRange(0, newColorIds, Date.now())
-
-  initWebSocket(() => {
-    synchronise(totalChunks)
-    connected.value = true
-  },() => {
-    connected.value = false
-  })
 })
 
 </script>
@@ -57,10 +67,13 @@ onMounted(() => {
       :selected-position="selectedPosition"
       @select-position="selectPosition"
   />
-  <div class="absolute top-0 p-4 pointer-events-none cursor-default">
-    <div class="px-4 py-2 bg-neutral-800/70 w-full text-neutral-200 backdrop-blur-md rounded-lg">
-      <WebSocket :connected="connected"/>
-    </div>
+  <div
+      v-if="!connected || percentLoaded < 100"
+      class="absolute top-8 inset-x-0 text-center pointer-events-none cursor-default"
+  >
+    <span class="pl-4 pr-2 py-4 bg-neutral-800/70 w-full text-neutral-200 backdrop-blur-md rounded-lg">
+      <WebSocketState :percentLoaded="percentLoaded" :connected="connected" @retry="startWebSocket"/>
+    </span>
   </div>
   <div
       v-if="selectedPosition !== null"

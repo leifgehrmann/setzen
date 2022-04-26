@@ -3,14 +3,30 @@ type UpdateBulkListener = () => void
 
 export let stateColorIds: Uint8Array = new Uint8Array(0)
 export let stateTimes: Uint32Array = new Uint32Array(0)
+export let chunkTimes: Uint32Array = new Uint32Array(0)
 let stateChunkSize = 0
 let updateListeners: UpdateListener[] = []
 let updateBulkListeners: UpdateBulkListener[] = []
 
+const getChunkIdForPosition = (position: number): number => {
+  if (stateChunkSize === 0) {
+    throw new Error('initState() must be called first.')
+  }
+  return Math.floor(position / stateChunkSize)
+}
+
+export const getTotalChunks = (): number => {
+  if (stateColorIds.length === 0 || stateChunkSize === 0) {
+    throw new Error('initState() must be called first.')
+  }
+  return Math.ceil(stateColorIds.length/stateChunkSize)
+}
+
 export const initState = (size: number, chunkSize: number) => {
+  stateChunkSize = chunkSize
   stateColorIds = new Uint8Array(size)
   stateTimes = new Uint32Array(size)
-  stateChunkSize = chunkSize
+  chunkTimes = new Uint32Array(getTotalChunks())
 }
 
 export const update = (
@@ -27,6 +43,7 @@ export const update = (
   stateColorIds[position] = newColorId
   if (newTime !== null) {
     stateTimes[position] = newTime
+    chunkTimes[getChunkIdForPosition(position)] = newTime
   }
   updateListeners.forEach((listener) => {
     listener(position, newColorId, newTime)
@@ -41,6 +58,7 @@ export const updateChunk = (
   const newColorIds = Uint8Array.from(atob(newColorIdsBase64), c => c.charCodeAt(0))
   const offset = chunkId * stateChunkSize
   updateRange(offset, newColorIds, newTime)
+  chunkTimes[chunkId] = newTime
 }
 
 export const updateRange = (
