@@ -3,9 +3,7 @@ import './index.css'
 import Globe from './components/Globe.vue'
 import ColorSelector from "./components/ColorSelector.vue";
 import WebSocketState from "./components/WebSocketState.vue";
-
 import { ref, onMounted } from 'vue'
-
 let sphereDetail = 224
 import { initState, update, updateRange } from './utils/state';
 import { initWebSocket, synchronise, requestUpdate } from "./utils/webSocket";
@@ -56,6 +54,8 @@ function startWebSocket() {
 onMounted(() => {
   const newColorIds = new Uint8Array(sphereFaceCount)
   updateRange(0, newColorIds, Date.now())
+
+  startWebSocket()
 })
 
 </script>
