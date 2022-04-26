@@ -4,10 +4,10 @@ import Globe from './components/Globe.vue'
 import ColorSelector from "./components/ColorSelector.vue";
 import WebSocketState from "./components/WebSocketState.vue";
 import { ref, onMounted } from 'vue'
-let sphereDetail = 224
 import { initState, update, updateRange } from './utils/state';
 import { initWebSocket, synchronise, requestUpdate } from "./utils/webSocket";
 
+let sphereDetail = 224
 let sphereFaceCount = 20 * (sphereDetail + 1) * (sphereDetail + 1)
 let chunkSize = 16875 // See /server/sendmessage/app.js
 
