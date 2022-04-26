@@ -7,6 +7,7 @@ const {
   CONNECTIONS_TABLE_NAME,
   UPDATES_TABLE_NAME,
   CHUNKS_TABLE_NAME,
+  CHUNK_INFO_TABLE_NAME,
   CHUNK_LOCKS_TABLE_NAME,
   QUEUE_TABLE_NAME
 } = process.env;
@@ -147,17 +148,30 @@ const updateChunk = async () => {
     queueKeysToDelete.push(item.position)
   })
 
-  // 8. Store the new chunk value.
+  // Store the new chunk value.
   try {
     const colorIdsBase64 = Buffer.from(uint8Array.buffer).toString('base64')
-    await ddb.put({
-      TableName: CHUNKS_TABLE_NAME,
-      Item: {
-        chunkId: chunkId,
-        colorIds: colorIdsBase64,
-        lastUpdatedAt: newLastUpdatedAt
+    await ddb.batchWrite({
+      RequestItems: {
+        [CHUNKS_TABLE_NAME]: [{
+          PutRequest: {
+            Item: {
+              chunkId: chunkId,
+              colorIds: colorIdsBase64,
+              lastUpdatedAt: newLastUpdatedAt
+            }
+          }
+        }],
+        [CHUNK_INFO_TABLE_NAME]: [{
+          PutRequest: {
+            Item: {
+              chunkId: chunkId,
+              lastUpdatedAt: newLastUpdatedAt
+            }
+          }
+        }]
       }
-    }).promise();
+    }).promise()
   } catch (err) {
     console.error('Failed to put chunk. ' + err.message)
     return
@@ -237,6 +251,24 @@ const narrowcastChunkData = async (
   const data = JSON.stringify({
     type: 'chunk',
     data: chunkData
+  })
+  await apigwManagementApi.postToConnection({ ConnectionId: connectionId, Data: data }).promise();
+}
+
+/**
+ * @param {AWS.ApiGatewayManagementApi} apigwManagementApi
+ * @param {string} connectionId
+ * @param {{chunkId: number, lastUpdatedAt: number}[]} chunkInfoData
+ * @returns {Promise<void>}
+ */
+const narrowcastChunkInfoData = async (
+  apigwManagementApi,
+  connectionId,
+  chunkInfoData
+) => {
+  const data = JSON.stringify({
+    type: 'chunkInfo',
+    data: chunkInfoData
   })
   await apigwManagementApi.postToConnection({ ConnectionId: connectionId, Data: data }).promise();
 }
@@ -354,6 +386,22 @@ exports.handler = async event => {
           chunkItem
         );
       } catch (e) {
+        return { statusCode: 500, body: e.stack };
+      }
+      return { statusCode: 200, body: 'Data sent.' };
+    case 'readChunkInfo':
+      try {
+        let chunkInfoData = await ddb.scan({
+          TableName: CHUNK_INFO_TABLE_NAME,
+          ProjectionExpression: 'chunkId, lastUpdatedAt'
+        }).promise();
+        await narrowcastChunkInfoData(
+          apigwManagementApi,
+          connectionId,
+          chunkInfoData.Count !== 0 ? chunkInfoData.Items : []
+        );
+      } catch (e) {
+        console.error('Failed to scan chunk info. ', e.message)
         return { statusCode: 500, body: e.stack };
       }
       return { statusCode: 200, body: 'Data sent.' };

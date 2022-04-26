@@ -21,6 +21,14 @@ Parameters:
     MaxLength: 50
     AllowedPattern: ^[A-Za-z_]+$
     ConstraintDescription: 'Required. Can be characters and underscore only. No numbers or special characters allowed.'
+  ChunkInfoTableName:
+    Type: String
+    Default: 'setzen_chunk_info'
+    Description: (Required) The name of the new DynamoDB to store chunk info state. Minimum 3 characters
+    MinLength: 3
+    MaxLength: 50
+    AllowedPattern: ^[A-Za-z_]+$
+    ConstraintDescription: 'Required. Can be characters and underscore only. No numbers or special characters allowed.'
   ChunkLocksTableName:
     Type: String
     Default: 'setzen_chunk_locks'
@@ -162,6 +170,25 @@ Resources:
       SSESpecification:
         SSEEnabled: True
       TableName: !Ref ChunksTableName
+  ChunkInfoTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      # To avoid unnecessarily reading/writing to the Chunks table, we store
+      # metadata in this table.
+      AttributeDefinitions:
+        - AttributeName: "chunkId"
+          AttributeType: "N"
+        # - AttributeName: "lastUpdatedAt"
+        #   AttributeType: "N" # Unix time in milliseconds
+      KeySchema:
+        - AttributeName: "chunkId"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      SSESpecification:
+        SSEEnabled: True
+      TableName: !Ref ChunkInfoTableName
   ChunkLocksTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -281,6 +308,7 @@ Resources:
         Variables:
           CONNECTIONS_TABLE_NAME: !Ref ConnectionsTableName
           CHUNKS_TABLE_NAME: !Ref ChunksTableName
+          CHUNK_INFO_TABLE_NAME: !Ref ChunkInfoTableName
           CHUNK_LOCKS_TABLE_NAME: !Ref ChunkLocksTableName
           UPDATES_TABLE_NAME: !Ref UpdatesTableName
           QUEUE_TABLE_NAME: !Ref QueueTableName
@@ -289,6 +317,8 @@ Resources:
             TableName: !Ref ConnectionsTableName
         - DynamoDBCrudPolicy:
             TableName: !Ref ChunksTableName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ChunkInfoTableName
         - DynamoDBCrudPolicy:
             TableName: !Ref ChunkLocksTableName
         - DynamoDBCrudPolicy:
