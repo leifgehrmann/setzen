@@ -1,6 +1,6 @@
 <template>
   <div
-      v-if="connecting || !connected || percentLoaded === 100"
+      v-if="connecting || !connected || loading"
       class="py-2 bg-neutral-800/70 text-neutral-200 backdrop-blur-lg rounded-lg"
   >
     <span
@@ -19,7 +19,7 @@
       </button>
     </span>
     <span
-        v-else-if="percentLoaded === 100"
+        v-else-if="loading"
         class="px-4 inline-block w-60"
     >Loading ({{Math.floor(percentLoaded)}}%)</span>
   </div>
@@ -27,10 +27,16 @@
 
 <script setup lang="ts">
 
-defineProps({
+import {computed} from "vue";
+
+const props = defineProps({
   connecting: Boolean,
   connected: Boolean,
   percentLoaded: Number,
+})
+
+const loading = computed(() => {
+  return props.connected && props.percentLoaded !== 100
 })
 
 const emit = defineEmits(['reconnect'])
