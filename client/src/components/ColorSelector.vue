@@ -1,7 +1,7 @@
 <template>
-  <div class="overflow-scroll py-4 h-28 relative text-center">
-    <div class="inline-block">
-      <svg class="h-16 px-16" :viewBox="`0 0 ${colors.length*50+50} ${86.6}`">
+  <div class="overflow-x-scroll pt-4 h-28 relative text-center">
+    <span class="inline-block">
+      <svg class="h-16" style="padding-left: 33vw; padding-right: 33vw" :viewBox="`0 0 ${colors.length*50+50} ${86.6}`">
         <g v-for="(color, index) in colors">
           <polygon :points="points(index)" :fill="color" class="cursor-pointer pointer-events-auto" @click="log(index)"/>
         </g>
@@ -18,7 +18,7 @@
               left: `calc(${index * 2.31 + 3.3}rem - 10px)`
            }"
     >-->
-    </div>
+    </span>
   </div>
 <!--    <svg v-if="!up" class="h-10 absolute" viewBox="0 0 100 86.6"><polygon points="0,86.6 100,86.6 50,0" fill="#FFFFFF" @click="log" class="cursor-pointer pointer-events-auto"/></svg>-->
 <!--    <button v-if="up" class="rounded-lg bg-red-200 h-3 w-3 inset-full absolute"></button>-->
