@@ -23,7 +23,7 @@
     </span>
     <span
         v-else-if="loading"
-        class="px-4 inline-block w-60"
+        class="px-4 inline-block w-48"
     >Loading ({{Math.floor(percentLoaded)}}%)</span>
   </div>
 </template>

@@ -11,6 +11,7 @@ let sphereDetail = 224
 let sphereFaceCount = 20 * (sphereDetail + 1) * (sphereDetail + 1)
 let chunkSize = 16875 // See /server/sendmessage/app.js
 
+let showControls = ref(false)
 let percentLoaded = ref(0)
 let connecting = ref(false)
 let connected = ref(false)
@@ -76,7 +77,16 @@ onMounted(() => {
       @select-position="selectPosition"
   />
   <div
-      class="absolute top-4 flex justify-center inset-x-0 text-center pointer-events-none cursor-default"
+      class="
+        absolute
+        flex justify-center inset-x-0 text-center pointer-events-none cursor-default
+        transition-all ease-in-out duration-300
+      "
+      :class="{
+        'top-16 sm:top-2': !showControls && (!connected && !connecting),
+        'top-3': !showControls && !(!connected && !connecting),
+        'top-16': showControls,
+      }"
   >
     <WebSocketState
         :connecting="connecting"
@@ -89,10 +99,36 @@ onMounted(() => {
       class="absolute top-0 right-0 p-4 select-none pointer-events-none"
   >
     <button
-        @click="selectPosition(null)"
-        class="w-8 h-8 bg-neutral-800/70 text-neutral-200 backdrop-blur-md rounded-full text-center pointer-events-auto">
-      ?
+        @click="showControls = !showControls"
+        class="w-8 h-8 bg-neutral-800/70 text-neutral-200 backdrop-blur-md rounded-full text-center pointer-events-auto"
+    >
+      <img
+          v-if="!showControls" src="./assets/menu.svg" class="w-full h-full p-2" alt="Show menu">
+      <img v-if="showControls" src="./assets/close.svg" class="w-full h-full p-2" alt="Show menu">
     </button>
+  </div>
+  <div
+      class="absolute top-0 w-full overflow-hidden pointer-events-none"
+      style="height: calc(4rem + env(safe-area-inset-bottom))"
+  >
+    <div
+        class="
+          w-full h-full
+          p-4
+          transition-all ease-in-out duration-300
+          pointer-events-none
+        "
+        :style="{
+          'transform': !showControls ? 'translate(0, calc(-4rem - env(safe-area-inset-top)))' : 'translate(0, 0)',
+        }"
+    >
+      <button
+          @click="showControls = !showControls"
+          class="w-8 h-8 bg-neutral-800/70 text-neutral-200 backdrop-blur-md rounded-full text-center pointer-events-auto"
+      >
+        <img src="./assets/close.svg" class="w-full h-full p-2" alt="Close">
+      </button>
+    </div>
   </div>
   <div
       class="absolute bottom-0 h-44 p-4 select-none pointer-events-none overflow-hidden"
@@ -112,11 +148,11 @@ onMounted(() => {
           'transform': selectedPosition === null ? 'translate(0, calc(10rem + env(safe-area-inset-bottom)))' : 'translate(0, 0)',
         }"
     >
-      X
+      <img src="./assets/close.svg" class="w-full h-full p-2" alt="Close">
     </button>
   </div>
   <div
-      class="absolute bottom-0 w-full h-28 overflow-hidden pointer-events-none"
+      class="absolute bottom-0 w-full overflow-hidden pointer-events-none"
       style="height: calc(7rem + env(safe-area-inset-bottom))"
   >
     <div
