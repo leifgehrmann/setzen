@@ -5,7 +5,11 @@ module.exports = {
   ],
   darkMode: 'media',
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        sans: ['ui-rounded', 'Helvetica', 'sans-serif'],
+      },
+    },
   },
   plugins: [],
 }
