@@ -6,16 +6,19 @@
     <span
         v-if="connecting"
         class="px-4"
-    >Connecting...</span>
+    >
+      Connecting...
+    </span>
     <span
         v-else-if="!connected"
+        class="pl-4 pr-2"
     >
       <span class="pr-4">Session disconnected</span>
       <button
-          class="pr-2 py-1 bg-red-900 cursor-pointer pointer-events-auto rounded-md"
+          class="px-4 py-1 bg-green-600/70 cursor-pointer pointer-events-auto rounded"
           @click="emit('reconnect')"
       >
-        Retry
+        Reconnect
       </button>
     </span>
     <span
