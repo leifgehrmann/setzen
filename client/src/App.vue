@@ -117,7 +117,7 @@ onMounted(() => {
           p-4
           transition-all ease-in-out duration-300
           pointer-events-none
-          flex sm:space-x-1 justify-between gap-4
+          flex justify-between gap-2 sm:gap-4 sm:space-x-2
         "
         :style="{
           'transform': !showControls ? 'translate(0, calc(-4rem - env(safe-area-inset-top)))' : 'translate(0, 0)',
