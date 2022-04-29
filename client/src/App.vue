@@ -100,7 +100,7 @@ onMounted(() => {
   >
     <button
         @click="showControls = !showControls"
-        class="w-8 h-8 bg-neutral-800/70 text-neutral-200 backdrop-blur-md rounded-full text-center pointer-events-auto"
+        class="w-8 h-8 bg-neutral-800/70 backdrop-blur-md rounded-full pointer-events-auto"
     >
       <img
           v-if="!showControls" src="./assets/menu.svg" class="w-full h-full p-2" alt="Show menu">
@@ -117,17 +117,32 @@ onMounted(() => {
           p-4
           transition-all ease-in-out duration-300
           pointer-events-none
+          flex sm:space-x-1 justify-between gap-4
         "
         :style="{
           'transform': !showControls ? 'translate(0, calc(-4rem - env(safe-area-inset-top)))' : 'translate(0, 0)',
         }"
     >
-      <button
-          @click="showControls = !showControls"
-          class="w-8 h-8 bg-neutral-800/70 text-neutral-200 backdrop-blur-md rounded-full text-center pointer-events-auto"
-      >
-        <img src="./assets/close.svg" class="w-full h-full p-2" alt="Close">
-      </button>
+      <div class="bg-neutral-800/70 backdrop-blur-md w-8 rounded-full">
+        <img src="./assets/info.svg" class="w-full h-full p-2" alt="Show menu">
+      </div>
+      <div class="text-neutral-200 backdrop-blur-md grow sm:grow-0 sm:w-40 rounded-full">
+        <button class="bg-neutral-700/70 w-1/2 h-full rounded-l-full">
+          <img src="./assets/close.svg" class="w-full h-full p-2" alt="Show menu">
+        </button>
+        <button class="bg-neutral-800/70 w-1/2 h-full rounded-r-full" style="box-shadow: -1px 0 0 0 rgba(255, 255, 255, 0.15)">
+          <img src="./assets/close.svg" class="w-full h-full p-2" alt="Show menu">
+        </button>
+      </div>
+      <div class="text-neutral-200 backdrop-blur-md grow sm:grow-0 sm:w-40 rounded-full">
+        <button class="bg-neutral-800/70 w-1/2 h-full rounded-l-full">
+          <img src="./assets/close.svg" class="w-full h-full p-2" alt="Show menu">
+        </button>
+        <button class="bg-neutral-700/70 w-1/2 h-full rounded-r-full" style="box-shadow: -1px 0 0 0 rgba(255, 255, 255, 0.15)">
+          <img src="./assets/close.svg" class="w-full h-full p-2" alt="Show menu">
+        </button>
+      </div>
+      <div class="w-8"></div>
     </div>
   </div>
   <div
