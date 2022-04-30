@@ -12,6 +12,10 @@ let sphereFaceCount = 20 * (sphereDetail + 1) * (sphereDetail + 1)
 let chunkSize = 16875 // See /server/sendmessage/app.js
 
 let showControls = ref(false)
+let rotatingClockwise = ref(false)
+let rotatingAntiClockwise = ref(false)
+let zoomingIn = ref(false)
+let zoomingOut = ref(false)
 let percentLoaded = ref(0)
 let connecting = ref(false)
 let connected = ref(false)
@@ -103,12 +107,23 @@ onMounted(() => {
         class="w-8 h-8 bg-neutral-800/70 backdrop-blur-md rounded-full pointer-events-auto"
     >
       <img
-          v-if="!showControls" src="./assets/menu.svg" class="w-full h-full p-2" alt="Show menu">
-      <img v-if="showControls" src="./assets/close.svg" class="w-full h-full p-2" alt="Show menu">
+          v-if="!showControls"
+          src="./assets/menu.svg"
+          class="w-full h-full p-2 select-none pointer-events-none"
+          alt="Show menu"
+          style="-webkit-user-drag: none; user-drag: none;"
+      >
+      <img
+          v-if="showControls"
+          src="./assets/close.svg"
+          class="w-full h-full p-2 select-none pointer-events-none"
+          alt="Hide menu"
+          style="-webkit-user-drag: none; user-drag: none;"
+      >
     </button>
   </div>
   <div
-      class="absolute top-0 w-full overflow-hidden pointer-events-none"
+      class="absolute top-0 w-full overflow-hidden select-none pointer-events-none"
       style="height: calc(4rem + env(safe-area-inset-bottom))"
   >
     <div
@@ -123,23 +138,74 @@ onMounted(() => {
           'transform': !showControls ? 'translate(0, calc(-4rem - env(safe-area-inset-top)))' : 'translate(0, 0)',
         }"
     >
-      <div class="bg-neutral-800/70 backdrop-blur-md w-8 rounded-full">
-        <img src="./assets/info.svg" class="w-full h-full p-2" alt="Show menu">
+      <button class="bg-neutral-800/70 backdrop-blur-md w-8 rounded-full select-none pointer-events-auto">
+          <img
+              src="./assets/info.svg"
+              class="w-full h-full p-2 select-none pointer-events-none"
+              alt="Information"
+              style="-webkit-user-drag: none; user-drag: none;"
+          >
+      </button>
+      <div class="text-neutral-200 backdrop-blur-md grow sm:grow-0 sm:w-40 rounded-full pointer-events-auto">
+        <button
+            class="bg-neutral-800/70 w-1/2 h-full rounded-l-full"
+            :class="{'bg-neutral-700/70': rotatingAntiClockwise}"
+            @mousedown="rotatingAntiClockwise = true"
+            @mouseup="rotatingAntiClockwise = false"
+            @mouseleave="rotatingAntiClockwise = false"
+        >
+          <img
+              src="./assets/rotate-anti-clockwise.svg"
+              class="w-full h-full p-2 select-none pointer-events-none"
+              alt="Rotate anti-clockwise"
+              style="-webkit-user-drag: none; user-drag: none;"
+          >
+        </button>
+        <button
+            class="bg-neutral-800/70 w-1/2 h-full rounded-r-full"
+            style="box-shadow: -1px 0 0 0 rgba(255, 255, 255, 0.15)"
+            :class="{'bg-neutral-700/70': rotatingClockwise}"
+            @mousedown="rotatingClockwise = true"
+            @mouseup="rotatingClockwise = false"
+            @mouseleave="rotatingClockwise = false"
+        >
+          <img
+              src="./assets/rotate-clockwise.svg"
+              class="w-full h-full p-2 select-none pointer-events-none"
+              alt="Rotate clockwise"
+              style="-webkit-user-drag: none; user-drag: none;"
+          >
+        </button>
       </div>
-      <div class="text-neutral-200 backdrop-blur-md grow sm:grow-0 sm:w-40 rounded-full">
-        <button class="bg-neutral-700/70 w-1/2 h-full rounded-l-full">
-          <img src="./assets/close.svg" class="w-full h-full p-2" alt="Show menu">
+      <div class="text-neutral-200 backdrop-blur-md grow sm:grow-0 sm:w-40 rounded-full pointer-events-auto">
+        <button
+            class="bg-neutral-800/70 w-1/2 h-full rounded-l-full"
+            :class="{'bg-neutral-700/70': zoomingOut}"
+            @mousedown="zoomingOut = true"
+            @mouseup="zoomingOut = false"
+            @mouseleave="zoomingOut = false"
+        >
+          <img
+              src="./assets/zoom-out.svg"
+              class="w-full h-full p-2 select-none pointer-events-none"
+              alt="Zoom out"
+              style="-webkit-user-drag: none; user-drag: none;"
+          >
         </button>
-        <button class="bg-neutral-800/70 w-1/2 h-full rounded-r-full" style="box-shadow: -1px 0 0 0 rgba(255, 255, 255, 0.15)">
-          <img src="./assets/close.svg" class="w-full h-full p-2" alt="Show menu">
-        </button>
-      </div>
-      <div class="text-neutral-200 backdrop-blur-md grow sm:grow-0 sm:w-40 rounded-full">
-        <button class="bg-neutral-800/70 w-1/2 h-full rounded-l-full">
-          <img src="./assets/close.svg" class="w-full h-full p-2" alt="Show menu">
-        </button>
-        <button class="bg-neutral-700/70 w-1/2 h-full rounded-r-full" style="box-shadow: -1px 0 0 0 rgba(255, 255, 255, 0.15)">
-          <img src="./assets/close.svg" class="w-full h-full p-2" alt="Show menu">
+        <button
+            class="bg-neutral-800/70 w-1/2 h-full rounded-r-full"
+            style="box-shadow: -1px 0 0 0 rgba(255, 255, 255, 0.15)"
+            :class="{'bg-neutral-700/70': zoomingIn}"
+            @mousedown="zoomingIn = true"
+            @mouseup="zoomingIn = false"
+            @mouseleave="zoomingIn = false"
+        >
+          <img
+              src="./assets/zoom-in.svg"
+              class="w-full h-full p-2 select-none pointer-events-none"
+              alt="Zoom in"
+              style="-webkit-user-drag: none; user-drag: none;"
+          >
         </button>
       </div>
       <div class="w-8"></div>
@@ -163,7 +229,12 @@ onMounted(() => {
           'transform': selectedPosition === null ? 'translate(0, calc(10rem + env(safe-area-inset-bottom)))' : 'translate(0, 0)',
         }"
     >
-      <img src="./assets/close.svg" class="w-full h-full p-2" alt="Close">
+      <img
+          src="./assets/close.svg"
+          class="w-full h-full p-2 select-none pointer-events-none"
+          alt="Close"
+          style="-webkit-user-drag: none; user-drag: none;"
+      >
     </button>
   </div>
   <div
