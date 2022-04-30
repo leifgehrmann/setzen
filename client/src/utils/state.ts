@@ -145,7 +145,7 @@ export const updateRange = (
   const offsetEnd = Math.min(offset + newColorIds.length, stateColorIds.length)
   for (let position = offset; position < offsetEnd; position++) {
     if (stateTimes[position] > newTime) {
-      return
+      continue
     }
     stateColorIds[position] = newColorIds[position - offset]
     stateTimes[position] = newTime
