@@ -124,7 +124,7 @@ onMounted(() => {
   </div>
   <div
       class="absolute top-0 w-full overflow-hidden select-none pointer-events-none"
-      style="height: calc(4rem + env(safe-area-inset-bottom))"
+      style="height: calc(4rem + env(safe-area-inset-top))"
   >
     <div
         class="
@@ -138,7 +138,7 @@ onMounted(() => {
           'transform': !showControls ? 'translate(0, calc(-4rem - env(safe-area-inset-top)))' : 'translate(0, 0)',
         }"
     >
-      <button class="bg-neutral-800/70 backdrop-blur-md w-8 rounded-full select-none pointer-events-auto">
+      <button class="bg-neutral-800/70 backdrop-blur-md w-8 h-8 rounded-full select-none pointer-events-auto">
           <img
               src="./assets/info.svg"
               class="w-full h-full p-2 select-none pointer-events-none"
@@ -146,7 +146,7 @@ onMounted(() => {
               style="-webkit-user-drag: none; user-drag: none;"
           >
       </button>
-      <div class="text-neutral-200 backdrop-blur-md grow sm:grow-0 sm:w-40 rounded-full pointer-events-auto">
+      <div class="text-neutral-200 backdrop-blur-md grow sm:grow-0 sm:w-40 h-8 rounded-full pointer-events-auto">
         <button
             class="bg-neutral-800/70 w-1/2 h-full rounded-l-full"
             :class="{'bg-neutral-700/70': rotatingAntiClockwise}"
@@ -177,7 +177,7 @@ onMounted(() => {
           >
         </button>
       </div>
-      <div class="text-neutral-200 backdrop-blur-md grow sm:grow-0 sm:w-40 rounded-full pointer-events-auto">
+      <div class="text-neutral-200 backdrop-blur-md grow sm:grow-0 sm:w-40 h-8 rounded-full pointer-events-auto">
         <button
             class="bg-neutral-800/70 w-1/2 h-full rounded-l-full"
             :class="{'bg-neutral-700/70': zoomingOut}"
@@ -193,7 +193,7 @@ onMounted(() => {
           >
         </button>
         <button
-            class="bg-neutral-800/70 w-1/2 h-full rounded-r-full"
+            class="bg-neutral-800/70 w-1/2 h-8 rounded-r-full"
             style="box-shadow: -1px 0 0 0 rgba(255, 255, 255, 0.15)"
             :class="{'bg-neutral-700/70': zoomingIn}"
             @mousedown="zoomingIn = true"
