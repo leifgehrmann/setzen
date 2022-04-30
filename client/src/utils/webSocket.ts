@@ -1,4 +1,4 @@
-import {chunkTimes, getTotalChunks, triggerBulkUpdate, update, updateChunk} from "./state";
+import {chunkTimes, getTotalChunks, hasLoadedFromLocalStorage, triggerBulkUpdate, update, updateChunk} from "./state";
 
 let webSocket: WebSocket|null
 let syncAttempts = 0
@@ -82,7 +82,7 @@ export async function synchronise(
     await requestQueueData(webSocket)
     percentageLoadedCallback(1/itemsToLoad * 100)
 
-    if (syncAttempts === 0) {
+    if (!hasLoadedFromLocalStorage() && syncAttempts === 0) {
       // This means it is the first time we are loading chunks, so
       // we shall fetch all chunks.
       for (let chunkId = 0; chunkId < totalChunks; chunkId++) {
@@ -103,9 +103,10 @@ export async function synchronise(
       // Now with a more accurate list, we will update the chunks.
       itemsToLoad = 1 + chunkInfo.length
       for (let i = 0; i < chunkInfo.length; i++) {
+        percentageLoadedCallback((1 + i)/itemsToLoad * 100)
         await requestChunkData(webSocket, chunkInfo[i].chunkId)
-        percentageLoadedCallback((2 + i)/itemsToLoad * 100)
       }
+      percentageLoadedCallback(100)
     }
 
     triggerBulkUpdate()

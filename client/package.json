@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "base64-arraybuffer": "^1.0.2",
     "three": "^0.139.2",
     "vue": "^3.2.33"
   },

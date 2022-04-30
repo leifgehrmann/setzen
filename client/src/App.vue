@@ -4,7 +4,15 @@ import Globe from './components/Globe.vue'
 import ColorSelector from "./components/ColorSelector.vue";
 import WebSocketState from "./components/WebSocketState.vue";
 import { ref, onMounted } from 'vue'
-import { initState, update, updateRange, stateColorIds } from './utils/state';
+import {
+  initState,
+  updateRange,
+  getStateColorId,
+  loadFromLocalStorage,
+  addUpdateBulkListener,
+  persistToLocalStorage,
+  addUpdateListener, provisionalUpdate, triggerBulkUpdate
+} from './utils/state';
 import { initWebSocket, synchronise, requestUpdate } from "./utils/webSocket";
 
 let sphereDetail = 224
@@ -22,6 +30,10 @@ let connected = ref(false)
 let selectedPosition = ref(null as number|null)
 
 initState(sphereFaceCount, chunkSize)
+loadFromLocalStorage()
+addUpdateBulkListener(() => { persistToLocalStorage() })
+addUpdateListener(() => { persistToLocalStorage() })
+triggerBulkUpdate()
 
 function selectPosition(position: number|null) {
   selectedPosition.value = position
@@ -32,8 +44,12 @@ function updateColorId(colorId: number) {
   if (position === null) {
     return
   }
-  if (stateColorIds[position] === colorId) {
+  if (getStateColorId(position) === colorId) {
     // Don't send an update if the colors are the same.
+    return
+  }
+  if (percentLoaded.value !== 100) {
+    console.error('Cannot send update while not fully loaded.')
     return
   }
   if (!connected.value) {
@@ -47,7 +63,7 @@ function updateColorId(colorId: number) {
       console.error('Cannot send update while disconnected.')
       return
     }
-    update(position, colorId)
+    provisionalUpdate(position, colorId)
   }, 100)
 }
 
@@ -65,9 +81,6 @@ function startWebSocket() {
 }
 
 onMounted(() => {
-  const newColorIds = new Uint8Array(sphereFaceCount)
-  updateRange(0, newColorIds, Date.now())
-
   startWebSocket()
 })
 
