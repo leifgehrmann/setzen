@@ -1,7 +1,7 @@
 <template>
   <div class="overflow-x-scroll pt-4 h-28 relative text-center">
     <span class="inline-block">
-      <svg class="h-16" style="padding-left: 33vw; padding-right: 33vw" :viewBox="`0 0 ${colors.length*50+50} ${86.6}`">
+      <svg class="h-16" style="padding-left: 33vw; padding-right: 33vw" :viewBox="`0 0 ${colors.length*80+50} ${86.6}`">
         <g v-for="(color, index) in colors">
           <polygon :points="points(index)" :fill="color" class="cursor-pointer pointer-events-auto" @click="log(index)"/>
         </g>
@@ -39,9 +39,9 @@ const emit = defineEmits(['selectColorId'])
 let selectedIndex = ref(0)
 
 function points(index: number): string {
-  let lx = index * 50
-  let mx = index * 50 + 50
-  let rx = index * 50 + 100
+  let lx = index * 80
+  let mx = index * 80 + 50
+  let rx = index * 80 + 100
   let ty = 0
   let by = 86.6
   if (index % 2 == 0) {
