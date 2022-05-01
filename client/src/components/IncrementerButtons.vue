@@ -52,8 +52,8 @@ const emit = defineEmits(['updateDirection'])
 
 const direction = ref(0)
 
-const leftButton = ref(null)
-const rightButton = ref(null)
+const leftButton = ref<HTMLButtonElement | null>(null)
+const rightButton = ref<HTMLButtonElement | null>(null)
 
 function updateDirection(newDirection: number) {
   if (direction.value === newDirection) {
@@ -76,8 +76,11 @@ function release() {
 }
 
 onMounted(() => {
-  const leftButtonElement = leftButton.value as HTMLButtonElement
-  const rightButtonElement = rightButton.value as HTMLButtonElement
+  const leftButtonElement = leftButton.value
+  const rightButtonElement = rightButton.value
+  if (leftButtonElement === null || rightButtonElement === null) {
+    return
+  }
   leftButtonElement.addEventListener('touchstart', decrement)
   leftButtonElement.addEventListener('touchcancel', release)
   leftButtonElement.addEventListener('touchend', release)
