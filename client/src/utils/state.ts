@@ -99,7 +99,6 @@ export const update = (
   stateColorIds[position] = newColorId
   if (newTime !== null) {
     stateTimes[position] = newTime
-    chunkTimes[getChunkIdForPosition(position)] = newTime
   }
   updateListeners.forEach((listener) => {
     listener(position, newColorId, newTime)
