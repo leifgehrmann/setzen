@@ -1,7 +1,7 @@
 <template>
-  <div class="overflow-x-scroll pt-4 h-28 relative text-center">
+  <div class="overflow-x-scroll pt-4 h-32 relative text-center">
     <span class="inline-block">
-      <svg class="h-16" style="padding-left: 33vw; padding-right: 33vw" :viewBox="`0 0 ${colors.length*80+50} ${86.6}`">
+      <svg class="h-20" style="padding-left: 33vw; padding-right: 33vw" :viewBox="`0 0 ${colors.length*80+50} ${86.6}`">
         <g v-for="(color, index) in colors">
           <polygon :points="points(index)" :fill="color" class="cursor-pointer pointer-events-auto" @click="log(index)"/>
         </g>

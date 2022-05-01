@@ -162,8 +162,8 @@ onMounted(() => {
       </div>
     </div>
     <div
-        class="absolute bottom-0 h-44 p-4 select-none pointer-events-none overflow-hidden"
-        style="height: calc(11rem + env(safe-area-inset-bottom))"
+        class="absolute bottom-0 p-4 select-none pointer-events-none overflow-hidden"
+        style="height: calc(12rem + env(safe-area-inset-bottom))"
     >
       <RoundButton
           @click="selectPosition(null)"
@@ -171,13 +171,13 @@ onMounted(() => {
           class="transition-all ease-in-out duration-300 transform"
           :img-src="closeImage"
           :style="{
-            'transform': selectedPosition === null ? 'translate(0, calc(10rem + env(safe-area-inset-bottom)))' : 'translate(0, 0)',
+            'transform': selectedPosition === null ? 'translate(0, calc(12rem + env(safe-area-inset-bottom)))' : 'translate(0, 0)',
           }"
       />
     </div>
     <div
         class="absolute bottom-0 w-full overflow-hidden pointer-events-none"
-        style="height: calc(7rem + env(safe-area-inset-bottom))"
+        style="height: calc(8rem + env(safe-area-inset-bottom))"
     >
       <div
           class="
@@ -187,7 +187,7 @@ onMounted(() => {
             pointer-events-auto
           "
           :style="{
-            'transform': selectedPosition === null ? 'translate(0, calc(7rem + env(safe-area-inset-bottom)))' : 'translate(0, 0)',
+            'transform': selectedPosition === null ? 'translate(0, calc(8rem + env(safe-area-inset-bottom)))' : 'translate(0, 0)',
           }"
       >
         <ColorSelector @select-color-id="updateColorId"/>
