@@ -3,6 +3,10 @@ import './index.css'
 import closeImage from './assets/close.svg'
 import menuImage from './assets/menu.svg'
 import infoImage from './assets/info.svg'
+import rotateAntiClockwiseImage from './assets/rotate-anti-clockwise.svg'
+import rotateClockwiseImage from './assets/rotate-clockwise.svg'
+import zoomOutImage from './assets/zoom-out.svg'
+import zoomInImage from './assets/zoom-in.svg'
 import Globe from './components/Globe.vue'
 import ColorSelector from "./components/ColorSelector.vue";
 import WebSocketState from "./components/WebSocketState.vue";
