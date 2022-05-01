@@ -209,7 +209,7 @@ const updateChunk = async () => {
  *
  * @param {AWS.ApiGatewayManagementApi} apigwManagementApi
  * @param {{position: number, colorId: number, time: number}} updateData
- * @returns {Promise<unknown>[]}
+ * @returns {Promise<unknown>}
  */
 const broadcastUpdateEvent = async (
   apigwManagementApi,
@@ -219,7 +219,7 @@ const broadcastUpdateEvent = async (
 
   connectionData = await ddb.scan({ TableName: CONNECTIONS_TABLE_NAME, ProjectionExpression: 'connectionId' }).promise();
 
-  return connectionData.Items.map(async ({ connectionId }) => {
+  return Promise.allSettled(connectionData.Items.map(async ({ connectionId }) => {
     try {
       const data = JSON.stringify({
         type: 'update',
@@ -234,7 +234,7 @@ const broadcastUpdateEvent = async (
         throw e;
       }
     }
-  });
+  }));
 }
 
 /**
