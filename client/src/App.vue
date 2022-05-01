@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import './index.css'
+import closeImage from './assets/close.svg'
+import menuImage from './assets/menu.svg'
+import infoImage from './assets/info.svg'
 import Globe from './components/Globe.vue'
 import ColorSelector from "./components/ColorSelector.vue";
 import WebSocketState from "./components/WebSocketState.vue";
 import { ref, onMounted } from 'vue'
 import {
   initState,
-  updateRange,
   getStateColorId,
   loadFromLocalStorage,
   addUpdateBulkListener,
@@ -14,6 +16,7 @@ import {
   addUpdateListener, provisionalUpdate, triggerBulkUpdate
 } from './utils/state';
 import { initWebSocket, synchronise, requestUpdate } from "./utils/webSocket";
+import RoundButton from "./components/RoundButton.vue";
 
 let sphereDetail = 224
 let sphereFaceCount = 20 * (sphereDetail + 1) * (sphereDetail + 1)
@@ -115,25 +118,11 @@ onMounted(() => {
   <div
       class="absolute top-0 right-0 p-4 select-none pointer-events-none"
   >
-    <button
+    <RoundButton
         @click="showControls = !showControls"
-        class="w-8 h-8 bg-neutral-800/70 backdrop-blur-md rounded-full pointer-events-auto"
-    >
-      <img
-          v-if="!showControls"
-          src="./assets/menu.svg"
-          class="w-full h-full p-2 select-none pointer-events-none"
-          alt="Show menu"
-          style="-webkit-user-drag: none; user-drag: none;"
-      >
-      <img
-          v-if="showControls"
-          src="./assets/close.svg"
-          class="w-full h-full p-2 select-none pointer-events-none"
-          alt="Hide menu"
-          style="-webkit-user-drag: none; user-drag: none;"
-      >
-    </button>
+        :img-src="showControls ? closeImage : menuImage"
+        :label="showControls ? 'Hide menu' : 'Show menu'"
+    />
   </div>
   <div
       class="absolute top-0 w-full overflow-hidden select-none pointer-events-none"
@@ -151,14 +140,11 @@ onMounted(() => {
           'transform': !showControls ? 'translate(0, calc(-4rem - env(safe-area-inset-top)))' : 'translate(0, 0)',
         }"
     >
-      <button class="bg-neutral-800/70 backdrop-blur-md w-8 h-8 rounded-full select-none pointer-events-auto">
-          <img
-              src="./assets/info.svg"
-              class="w-full h-full p-2 select-none pointer-events-none"
-              alt="Information"
-              style="-webkit-user-drag: none; user-drag: none;"
-          >
-      </button>
+      <RoundButton
+          @click="showControls = !showControls"
+          label="Information"
+          :img-src="infoImage"
+      />
       <div class="text-neutral-200 backdrop-blur-md grow sm:grow-0 sm:w-40 h-8 rounded-full pointer-events-auto">
         <button
             class="bg-neutral-800/70 w-1/2 h-full rounded-l-full"
@@ -228,27 +214,15 @@ onMounted(() => {
       class="absolute bottom-0 h-44 p-4 select-none pointer-events-none overflow-hidden"
       style="height: calc(11rem + env(safe-area-inset-bottom))"
   >
-    <button
+    <RoundButton
         @click="selectPosition(null)"
-        class="
-          w-8 h-8
-          bg-neutral-800/70 text-neutral-200 backdrop-blur-md
-          rounded-full
-          text-center
-          pointer-events-auto
-          transition-all ease-in-out duration-300 transform"
-        :disabled="selectedPosition === null"
+        label="Close color selection"
+        class="transition-all ease-in-out duration-300 transform"
+        :img-src="closeImage"
         :style="{
           'transform': selectedPosition === null ? 'translate(0, calc(10rem + env(safe-area-inset-bottom)))' : 'translate(0, 0)',
         }"
-    >
-      <img
-          src="./assets/close.svg"
-          class="w-full h-full p-2 select-none pointer-events-none"
-          alt="Close"
-          style="-webkit-user-drag: none; user-drag: none;"
-      >
-    </button>
+    />
   </div>
   <div
       class="absolute bottom-0 w-full overflow-hidden pointer-events-none"
