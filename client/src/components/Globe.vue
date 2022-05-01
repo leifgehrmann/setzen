@@ -3,11 +3,16 @@ import * as THREE from 'three';
 import {ArcballControls} from "three/examples/jsm/controls/ArcballControls";
 import { colors } from "../utils/colors"
 import { addUpdateListener, addUpdateBulkListener, stateColorIds } from "../utils/state"
-import { onMounted } from 'vue'
+import { watch, onMounted } from 'vue'
 
 let renderer: THREE.Renderer, scene: THREE.Scene, camera: THREE.Camera;
 let sphere: THREE.Mesh;
 let vertexColors: Int32Array;
+let rotationAcceleration = 0.01
+let rotationDampening = 0.035
+let rotationLastFrameTime = 0
+let rotationSpeed = 0
+let rotationSpeedMax = 2
 
 addUpdateListener((position, colorId) => {
   let color = parseInt('0x' + colors[colorId].substring(1))
@@ -36,10 +41,45 @@ const props = defineProps({
   },
   selectedPosition: {
     required: true
+  },
+  rotateDirection: {
+    type: Number,
+    required: true
+  },
+  zoomDirection: {
+    type: Number,
+    required: true
   }
 });
 
 const emit = defineEmits(['selectPosition'])
+
+function animateRotation () {
+  if (rotationSpeed === 0 && props.rotateDirection === 0) {
+    return
+  }
+  if (props.rotateDirection !== 0) {
+    rotationSpeed += rotationAcceleration * props.rotateDirection
+  } else {
+    rotationSpeed -= Math.min(rotationDampening, Math.abs(rotationSpeed)) * ((rotationSpeed > 0) ? 1 : -1)
+    if (rotationSpeed < 0.0001 && rotationSpeed > -0.0001) {
+      rotationSpeed = 0
+    }
+  }
+  // Clamp the speed
+  rotationSpeed = Math.max(Math.min(rotationSpeed, rotationSpeedMax), -rotationSpeedMax)
+
+  const deltaTime = (Date.now() - rotationLastFrameTime) / 1000
+  camera.rotation.z += rotationSpeed * deltaTime;
+  renderer.render(scene, camera)
+  rotationLastFrameTime = Date.now()
+  requestAnimationFrame(animateRotation)
+}
+
+watch(() => props.rotateDirection, () => {
+  rotationLastFrameTime = Date.now()
+  animateRotation()
+})
 
 onMounted(() => {
   let controls: ArcballControls|null = null

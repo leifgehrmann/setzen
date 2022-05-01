@@ -28,6 +28,8 @@ let sphereFaceCount = 20 * (sphereDetail + 1) * (sphereDetail + 1)
 let chunkSize = 16875 // See /server/sendmessage/app.js
 
 let showControls = ref(false)
+let cameraZoomDirection = ref(0)
+let cameraRotateDirection = ref(0)
 let percentLoaded = ref(0)
 let connecting = ref(false)
 let connected = ref(false)
@@ -38,6 +40,14 @@ loadFromLocalStorage()
 addUpdateBulkListener(() => { persistToLocalStorage() })
 addUpdateListener(() => { persistToLocalStorage() })
 triggerBulkUpdate()
+
+function updateRotateDirection (newDirection: number) {
+  cameraRotateDirection.value = newDirection
+}
+
+function updateZoomDirection(newDirection: number) {
+  cameraZoomDirection.value = newDirection
+}
 
 function selectPosition(position: number|null) {
   selectedPosition.value = position
@@ -95,6 +105,8 @@ onMounted(() => {
     <Globe
         :sphere-detail="sphereDetail"
         :selected-position="selectedPosition"
+        :rotate-direction="cameraRotateDirection"
+        :zoom-direction="cameraZoomDirection"
         @select-position="selectPosition"
     />
     <div
@@ -151,12 +163,14 @@ onMounted(() => {
             right-label="Rotate clockwise"
             :left-img-src="rotateAntiClockwiseImage"
             :right-img-src="rotateClockwiseImage"
+            @updateDirection="updateRotateDirection"
         />
         <IncrementerButtons
             left-label="Zoom out"
             right-label="Zoom in"
             :left-img-src="zoomOutImage"
             :right-img-src="zoomInImage"
+            @updateDirection="updateZoomDirection"
         />
         <div class="w-8"></div>
       </div>
