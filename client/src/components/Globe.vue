@@ -8,11 +8,19 @@ import { watch, onMounted } from 'vue'
 let renderer: THREE.Renderer, scene: THREE.Scene, camera: THREE.Camera;
 let sphere: THREE.Mesh;
 let vertexColors: Int32Array;
-let rotationAcceleration = 0.01
-let rotationDampening = 0.035
-let rotationLastFrameTime = 0
+let cameraZoom = 390;
+let sphereSize = 200;
+let minCameraDistance = sphereSize / 2 + 5
+let maxCameraDistance = cameraZoom * 1.5
+let animateLastFrameTime = 0
+let rotationAcceleration = 0.03
+let rotationDampening = 0.05
 let rotationSpeed = 0
 let rotationSpeedMax = 2
+let zoomAcceleration = 0.03
+let zoomDampening = 0.05
+let zoomSpeed = 0
+let zoomSpeedMax = 1
 
 addUpdateListener((position, colorId) => {
   let color = parseInt('0x' + colors[colorId].substring(1))
@@ -54,8 +62,11 @@ const props = defineProps({
 
 const emit = defineEmits(['selectPosition'])
 
-function animateRotation () {
-  if (rotationSpeed === 0 && props.rotateDirection === 0) {
+function animateControls () {
+  if (
+      rotationSpeed === 0 && props.rotateDirection === 0 &&
+      zoomSpeed === 0 && props.zoomDirection === 0
+  ) {
     return
   }
   if (props.rotateDirection !== 0) {
@@ -66,29 +77,57 @@ function animateRotation () {
       rotationSpeed = 0
     }
   }
+  if (props.zoomDirection !== 0) {
+    zoomSpeed += zoomAcceleration * props.zoomDirection
+  } else {
+    zoomSpeed -= Math.min(zoomDampening, Math.abs(zoomSpeed)) * ((zoomSpeed > 0) ? 1 : -1)
+    if (zoomSpeed < 0.0001 && zoomSpeed > -0.0001) {
+      zoomSpeed = 0
+    }
+  }
   // Clamp the speed
   rotationSpeed = Math.max(Math.min(rotationSpeed, rotationSpeedMax), -rotationSpeedMax)
+  zoomSpeed = Math.max(Math.min(zoomSpeed, zoomSpeedMax), -zoomSpeedMax)
 
-  const deltaTime = (Date.now() - rotationLastFrameTime) / 1000
+  const deltaTime = (Date.now() - animateLastFrameTime) / 1000
+
+  // Perform rotation.
   camera.rotation.z += rotationSpeed * deltaTime;
+
+  // Perform zoom, but only if the zoom limits have not be exceeded.
+  const newCameraPosition = (new THREE.Vector3()).copy(camera.position).multiplyScalar((1 - zoomSpeed * deltaTime))
+  const distance = newCameraPosition.distanceTo(new THREE.Vector3(0, 0, 0))
+  if (distance <= minCameraDistance) {
+    zoomSpeed = 0
+    const minCameraPosition = camera.position.normalize().multiplyScalar(minCameraDistance)
+    camera.position.x = minCameraPosition.x;
+    camera.position.y = minCameraPosition.y;
+    camera.position.z = minCameraPosition.z;
+  } else if (distance >= maxCameraDistance) {
+    zoomSpeed = 0
+    const maxCameraPosition = camera.position.normalize().multiplyScalar(maxCameraDistance)
+    camera.position.x = maxCameraPosition.x;
+    camera.position.y = maxCameraPosition.y;
+    camera.position.z = maxCameraPosition.z;
+  } else {
+    camera.position.x = newCameraPosition.x;
+    camera.position.y = newCameraPosition.y;
+    camera.position.z = newCameraPosition.z;
+  }
   renderer.render(scene, camera)
-  rotationLastFrameTime = Date.now()
-  requestAnimationFrame(animateRotation)
+  animateLastFrameTime = Date.now()
+  requestAnimationFrame(animateControls)
 }
 
-watch(() => props.rotateDirection, () => {
-  rotationLastFrameTime = Date.now()
-  animateRotation()
+watch(() => [props.rotateDirection, props.zoomDirection], () => {
+  animateLastFrameTime = Date.now()
+  animateControls()
 })
 
 onMounted(() => {
   let controls: ArcballControls|null = null
 
-  let cameraZoom = 390;
   let sphereDetail = props.sphereDetail;
-  let sphereSize = 200;
-  let minCameraDistance = sphereSize/2 + 5
-  let maxCameraDistance = cameraZoom * 1.5
   if (window.innerWidth < window.innerHeight) {
     cameraZoom *= window.innerHeight/window.innerWidth
     maxCameraDistance = cameraZoom * 1.5
