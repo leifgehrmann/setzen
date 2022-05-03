@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import * as THREE from 'three';
 import {ArcballControls} from "three/examples/jsm/controls/ArcballControls";
-import { colors } from "../utils/colors"
+import { colorFloats } from "../utils/colors"
 import { addUpdateListener, addUpdateBulkListener, stateColorIds } from "../utils/state"
 import { watch, onMounted } from 'vue'
 
 let renderer: THREE.Renderer, scene: THREE.Scene, camera: THREE.Camera;
 let sphere: THREE.Mesh;
-let vertexColors: Int32Array;
+let vertexColorIds: Int32Array; // WebGl doesn't allow 8-bit arrays as attributes.
 let cameraZoom = 390;
 let sphereSize = 200;
 let minCameraDistance = sphereSize / 2 + 5
@@ -23,22 +23,21 @@ let zoomSpeed = 0
 let zoomSpeedMax = 1
 
 addUpdateListener((position, colorId) => {
-  let color = parseInt('0x' + colors[colorId].substring(1))
-  vertexColors[position * 3] = color
-  vertexColors[position * 3 + 1] = color
-  vertexColors[position * 3 + 2] = color
-  sphere.geometry.attributes.vertexColor.needsUpdate = true;
+  vertexColorIds[position * 3] = colorId
+  vertexColorIds[position * 3 + 1] = colorId
+  vertexColorIds[position * 3 + 2] = colorId
+  sphere.geometry.attributes.vertexColorId.needsUpdate = true;
   renderer.render(scene, camera);
 })
 
 addUpdateBulkListener(() => {
-  for (let i = 0; i < vertexColors.length; i+=3) {
-    let color = parseInt('0x' + colors[stateColorIds[i/3]].substring(1))
-    vertexColors[i] = color
-    vertexColors[i+1] = color
-    vertexColors[i+2] = color
+  for (let i = 0; i < vertexColorIds.length; i+=3) {
+    let colorId = stateColorIds[i/3]
+    vertexColorIds[i] = colorId
+    vertexColorIds[i+1] = colorId
+    vertexColorIds[i+2] = colorId
   }
-  sphere.geometry.attributes.vertexColor.needsUpdate = true;
+  sphere.geometry.attributes.vertexColorId.needsUpdate = true;
   renderer.render(scene, camera);
 })
 
@@ -153,18 +152,28 @@ onMounted(() => {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
 
+    const vertexShaderColorIdMapping = colorFloats.map((colorFloatArr, index) => {
+      return `
+    case ${index}:
+      vColor = vec4(
+        ${colorFloatArr[0]},
+        ${colorFloatArr[1]},
+        ${colorFloatArr[2]},
+        1
+      );
+      break;
+`
+    })
+
     const vertexShader = `
-attribute int vertexColor;
+attribute int vertexColorId;
 varying vec4 vColor;
 
 void main() {
   gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-  vColor = vec4(
-    float((vertexColor>>16)&255)/255.0,
-    float((vertexColor>>8)&255)/255.0,
-    float(vertexColor&255)/255.0,
-    1
-  );
+  switch (vertexColorId) {
+${vertexShaderColorIdMapping.join('')}
+  }
 }
 `
 
@@ -191,9 +200,9 @@ void main() {
     const geometry = new THREE.IcosahedronGeometry(radius, sphereDetail);
 
     console.log(geometry.attributes.position.count/3)
-    vertexColors = new Int32Array(geometry.attributes.position.count);
+    vertexColorIds = new Int32Array(geometry.attributes.position.count);
 
-    geometry.setAttribute('vertexColor', new THREE.BufferAttribute(vertexColors, 1));
+    geometry.setAttribute('vertexColorId', new THREE.BufferAttribute(vertexColorIds, 1));
 
     sphere = new THREE.Mesh(geometry, shaderMaterial);
     scene.add(sphere);

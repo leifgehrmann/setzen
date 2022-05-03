@@ -32,3 +32,12 @@ export const colors = [
   '#d4d7d9',
   '#ffffff'
 ]
+
+export const colorFloats = colors.map((color) => {
+  const colorDecimal = parseInt('0x' + color.substring(1))
+  return [
+    ((colorDecimal>>16)&255)/255,
+    ((colorDecimal>>8)&255)/255,
+    (colorDecimal&255)/255
+  ]
+})
