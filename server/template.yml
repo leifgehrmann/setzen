@@ -149,7 +149,7 @@ Resources:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
       SSESpecification:
-        SSEEnabled: True
+        SSEEnabled: False # Disabled to not incur AWS Key Management Service costs.
       TableName: !Ref ConnectionsTableName
   ChunksTable:
     Type: AWS::DynamoDB::Table
@@ -168,7 +168,7 @@ Resources:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
       SSESpecification:
-        SSEEnabled: True
+        SSEEnabled: False
       TableName: !Ref ChunksTableName
   ChunkInfoTable:
     Type: AWS::DynamoDB::Table
@@ -187,7 +187,7 @@ Resources:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
       SSESpecification:
-        SSEEnabled: True
+        SSEEnabled: False
       TableName: !Ref ChunkInfoTableName
   ChunkLocksTable:
     Type: AWS::DynamoDB::Table
@@ -206,7 +206,7 @@ Resources:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
       SSESpecification:
-        SSEEnabled: True
+        SSEEnabled: False
       TableName: !Ref ChunkLocksTableName
   UpdatesTable:
     Type: AWS::DynamoDB::Table
@@ -231,7 +231,7 @@ Resources:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
       SSESpecification:
-        SSEEnabled: True
+        SSEEnabled: False
       TableName: !Ref UpdatesTableName
   QueueTable:
     Type: AWS::DynamoDB::Table
@@ -253,7 +253,7 @@ Resources:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
       SSESpecification:
-        SSEEnabled: True
+        SSEEnabled: False
       TableName: !Ref QueueTableName
   OnConnectFunction:
     Type: AWS::Serverless::Function
