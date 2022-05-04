@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import * as THREE from 'three';
-import {ArcballControls} from "three/examples/jsm/controls/ArcballControls";
 import { colorFloats } from "../utils/colors"
 import { addUpdateListener, addUpdateBulkListener, stateColorIds } from "../utils/state"
 import { watch, onMounted } from 'vue'
@@ -160,8 +159,6 @@ watch(() => [props.selectedPosition], () => {
 })
 
 onMounted(() => {
-  let controls: ArcballControls|null = null
-
   let sphereDetail = props.sphereDetail;
   if (window.innerWidth < window.innerHeight) {
     cameraZoom *= window.innerHeight/window.innerWidth
@@ -276,23 +273,22 @@ void main() {
   }
 
   function createControls( camera: THREE.Camera ) {
-
-    controls = new ArcballControls( camera, renderer.domElement );
-
-    controls.enablePan = false
-    controls.minDistance = minCameraDistance
-    controls.maxDistance = maxCameraDistance
-
-    controls.addEventListener( 'change', function () {
-      const newCameraTrackballRadius = cameraZoom/camera.position.distanceTo(new THREE.Vector3(0,0,0))
-      if (newCameraTrackballRadius !== cameraTrackballRadius) {
-        cameraTrackballRadius = newCameraTrackballRadius
-        controls?.setTbRadius(newCameraTrackballRadius)
-      }
-
-      renderer.render( scene, camera );
-    });
-
+    // touchEnd/mouseUp with no significant dragging should affect zoom + pan + focus (animated zoom).
+    // - update selectedPosition
+    // - Change zoom level to be 25% of what the current zoom is, with a maxZoom specifically for clicking.
+    // - Change the position by following the great-circle path between the two points.
+    // touchEnd/mouseUp with significant dragging should pan across the globe, but not focus.
+    // - selected tile should stay underneath finger. Great circle distance between two
+    // - release velocity should be measured by diff between touchMove and touchEnd.
+    // - unknown: What if fingers are outside globe.
+    // touchMove with two fingers should affect zoom. Distance between two points on a sphere should be consistent with zoom level.
+    // - unknown: What if fingers are outside globe.
+    // mouse wheel scroll should affect zoom.
+    // left/right/up/down key should focus to nearest tile from current position.
+    // SHIFT+LEFT should title camera left.
+    // SHIFT+RIGHT should title camera right.
+    // = or + key should zoom in
+    // - or _ key should zoom out
   }
 
   function onWindowResize() {
