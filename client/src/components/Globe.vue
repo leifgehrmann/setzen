@@ -41,23 +41,12 @@ addUpdateBulkListener(() => {
   renderer.render(scene, camera);
 })
 
-const props = defineProps({
-  sphereDetail: {
-    type: Number,
-    required: true
-  },
-  selectedPosition: {
-    required: true
-  },
-  rotateDirection: {
-    type: Number,
-    required: true
-  },
-  zoomDirection: {
-    type: Number,
-    required: true
-  }
-});
+const props = defineProps<{
+  sphereDetail: number
+  selectedPosition: number|null
+  rotateDirection: number
+  zoomDirection: number
+}>()
 
 const emit = defineEmits(['selectPosition'])
 
@@ -121,6 +110,24 @@ function animateControls () {
 watch(() => [props.rotateDirection, props.zoomDirection], () => {
   animateLastFrameTime = Date.now()
   animateControls()
+})
+
+watch(() => [props.selectedPosition], () => {
+  if (props.selectedPosition === null) {
+    // Hide selector.
+  } else {
+    // Show selectedPosition.
+    // const faceGeom = new THREE.Geometry();
+    const faceIndex = props.selectedPosition * 3 * 3
+
+    // console.log(geom.vertices)
+    // geom.vertices.push(new THREE.Vertex(v1));
+    // geom.vertices.push(new THREE.Vertex(v2));
+    // geom.vertices.push(new THREE.Vertex(v3));
+    const v1 = new THREE.Vector3(...sphere.geometry.attributes.position.array.slice(faceIndex, faceIndex + 3))
+    const v2 = new THREE.Vector3(...sphere.geometry.attributes.position.array.slice(faceIndex + 3, faceIndex + 6))
+    const v3 = new THREE.Vector3(...sphere.geometry.attributes.position.array.slice(faceIndex + 6, faceIndex + 9))
+  }
 })
 
 onMounted(() => {
