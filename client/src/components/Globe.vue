@@ -4,6 +4,7 @@ import {ArcballControls} from "three/examples/jsm/controls/ArcballControls";
 import { colorFloats } from "../utils/colors"
 import { addUpdateListener, addUpdateBulkListener, stateColorIds } from "../utils/state"
 import { watch, onMounted } from 'vue'
+import {getOuterEdgeMarkersGeometry} from "../utils/selectedMarker";
 
 let renderer: THREE.Renderer, scene: THREE.Scene, camera: THREE.Camera;
 let sphere: THREE.Mesh;
@@ -117,16 +118,18 @@ watch(() => [props.selectedPosition], () => {
     // Hide selector.
   } else {
     // Show selectedPosition.
-    // const faceGeom = new THREE.Geometry();
     const faceIndex = props.selectedPosition * 3 * 3
 
-    // console.log(geom.vertices)
-    // geom.vertices.push(new THREE.Vertex(v1));
-    // geom.vertices.push(new THREE.Vertex(v2));
-    // geom.vertices.push(new THREE.Vertex(v3));
     const v1 = new THREE.Vector3(...sphere.geometry.attributes.position.array.slice(faceIndex, faceIndex + 3))
     const v2 = new THREE.Vector3(...sphere.geometry.attributes.position.array.slice(faceIndex + 3, faceIndex + 6))
     const v3 = new THREE.Vector3(...sphere.geometry.attributes.position.array.slice(faceIndex + 6, faceIndex + 9))
+
+    const material = new THREE.MeshBasicMaterial( { color: 0xff0000 } );
+    const mesh = new THREE.Mesh(getOuterEdgeMarkersGeometry(v1, v2, v3)[0], material );
+    mesh.scale.multiplyScalar(1.1)
+    scene.add(mesh)
+    mesh.geometry.attributes.position.needsUpdate = true;
+    renderer.render(scene, camera);
   }
 })
 
@@ -198,7 +201,7 @@ void main() {
       vertexShader,
       fragmentShader,
       transparent: true,
-      depthTest: false
+      depthTest: true
     });
 
 
