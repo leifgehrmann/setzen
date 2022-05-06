@@ -132,8 +132,8 @@ watch(() => [props.selectedPosition], () => {
     // @ts-ignore
     const v3 = new THREE.Vector3(...sphere.geometry.attributes.position.array.slice(faceIndex + 6, faceIndex + 9))
 
-    const outerMaterial = new THREE.MeshBasicMaterial( { color: 0x000000 } );
-    const innerMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff } );
+    const outerMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff, transparent: true, opacity: 0.5 } );
+    const innerMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, transparent: true, opacity: 0.5 } );
 
     addedMeshes.forEach((mesh) => {
       scene.remove(mesh)
