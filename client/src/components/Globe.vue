@@ -22,7 +22,7 @@ let zoomAcceleration = 0.03
 let zoomDampening = 0.05
 let zoomSpeed = 0
 let zoomSpeedMax = 1
-let addedMeshes = []
+let addedMeshes: THREE.Mesh[] = []
 
 addUpdateListener((position, colorId) => {
   vertexColorIds[position * 3] = colorId
@@ -125,8 +125,11 @@ watch(() => [props.selectedPosition], () => {
     // Show selectedPosition.
     const faceIndex = props.selectedPosition * 3 * 3
 
+    // @ts-ignore
     const v1 = new THREE.Vector3(...sphere.geometry.attributes.position.array.slice(faceIndex, faceIndex + 3))
+    // @ts-ignore
     const v2 = new THREE.Vector3(...sphere.geometry.attributes.position.array.slice(faceIndex + 3, faceIndex + 6))
+    // @ts-ignore
     const v3 = new THREE.Vector3(...sphere.geometry.attributes.position.array.slice(faceIndex + 6, faceIndex + 9))
 
     const outerMaterial = new THREE.MeshBasicMaterial( { color: 0x000000 } );
