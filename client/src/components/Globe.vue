@@ -4,7 +4,7 @@ import {ArcballControls} from "three/examples/jsm/controls/ArcballControls";
 import { colorFloats } from "../utils/colors"
 import { addUpdateListener, addUpdateBulkListener, stateColorIds } from "../utils/state"
 import { watch, onMounted } from 'vue'
-import {getOuterEdgeMarkersGeometry} from "../utils/selectedMarker";
+import { getInnerEdgeMarkersGeometry, getOuterEdgeMarkersGeometry } from "../utils/selectedMarker";
 
 let renderer: THREE.Renderer, scene: THREE.Scene, camera: THREE.Camera;
 let sphere: THREE.Mesh;
@@ -22,6 +22,7 @@ let zoomAcceleration = 0.03
 let zoomDampening = 0.05
 let zoomSpeed = 0
 let zoomSpeedMax = 1
+let addedMeshes = []
 
 addUpdateListener((position, colorId) => {
   vertexColorIds[position * 3] = colorId
@@ -116,6 +117,10 @@ watch(() => [props.rotateDirection, props.zoomDirection], () => {
 watch(() => [props.selectedPosition], () => {
   if (props.selectedPosition === null) {
     // Hide selector.
+    addedMeshes.forEach((mesh) => {
+      scene.remove(mesh)
+    })
+    addedMeshes = []
   } else {
     // Show selectedPosition.
     const faceIndex = props.selectedPosition * 3 * 3
@@ -124,11 +129,30 @@ watch(() => [props.selectedPosition], () => {
     const v2 = new THREE.Vector3(...sphere.geometry.attributes.position.array.slice(faceIndex + 3, faceIndex + 6))
     const v3 = new THREE.Vector3(...sphere.geometry.attributes.position.array.slice(faceIndex + 6, faceIndex + 9))
 
-    const material = new THREE.MeshBasicMaterial( { color: 0xff0000 } );
-    const mesh = new THREE.Mesh(getOuterEdgeMarkersGeometry(v1, v2, v3)[0], material );
-    mesh.scale.multiplyScalar(1.1)
-    scene.add(mesh)
-    mesh.geometry.attributes.position.needsUpdate = true;
+    const outerMaterial = new THREE.MeshBasicMaterial( { color: 0x000000 } );
+    const innerMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff } );
+
+    addedMeshes.forEach((mesh) => {
+      scene.remove(mesh)
+    })
+
+    addedMeshes = []
+
+    const edgeOffset = 5 / props.sphereDetail
+    const edgeLength = 30 / props.sphereDetail
+
+    const outerGeom = getOuterEdgeMarkersGeometry(v1, v2, v3, edgeOffset, edgeLength)
+    const outerMesh = new THREE.Mesh(outerGeom, outerMaterial );
+    outerMesh.scale.multiplyScalar(1.0001)
+    scene.add(outerMesh)
+    addedMeshes.push(outerMesh)
+
+    const innerGeom = getInnerEdgeMarkersGeometry(v1, v2, v3, edgeOffset, edgeLength)
+    const innerMesh = new THREE.Mesh(innerGeom, innerMaterial );
+    innerMesh.scale.multiplyScalar(1.0001)
+    scene.add(innerMesh)
+    addedMeshes.push(innerMesh)
+
     renderer.render(scene, camera);
   }
 })
