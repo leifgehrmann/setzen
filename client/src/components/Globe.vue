@@ -141,8 +141,8 @@ watch(() => [props.selectedPosition], () => {
 
     addedMeshes = []
 
-    const edgeOffset = 5 / props.sphereDetail
-    const edgeLength = 30 / props.sphereDetail
+    const edgeOffset = 7 / props.sphereDetail
+    const edgeLength = 40 / props.sphereDetail
 
     const outerGeom = getOuterEdgeMarkersGeometry(v1, v2, v3, edgeOffset, edgeLength)
     const outerMesh = new THREE.Mesh(outerGeom, outerMaterial );
