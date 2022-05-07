@@ -132,17 +132,16 @@ watch(() => [props.selectedPosition], () => {
     // @ts-ignore
     const v3 = new THREE.Vector3(...sphere.geometry.attributes.position.array.slice(faceIndex + 6, faceIndex + 9))
 
-    const outerMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff, transparent: true, opacity: 0.5 } );
-    const innerMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, transparent: true, opacity: 0.5 } );
+    const outerMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff, transparent: true, opacity: 0.6 } );
+    const innerMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, transparent: true, opacity: 0.6 } );
 
     addedMeshes.forEach((mesh) => {
       scene.remove(mesh)
     })
 
     addedMeshes = []
-
-    const edgeOffset = 7 / props.sphereDetail
-    const edgeLength = 40 / props.sphereDetail
+    const edgeOffset = 10 / props.sphereDetail
+    const edgeLength = 41 / props.sphereDetail
 
     const outerGeom = getOuterEdgeMarkersGeometry(v1, v2, v3, edgeOffset, edgeLength)
     const outerMesh = new THREE.Mesh(outerGeom, outerMaterial );
