@@ -4,8 +4,12 @@ import { colorFloats } from "../utils/colors"
 import { addUpdateListener, addUpdateBulkListener, stateColorIds } from "../utils/state"
 import { watch, onMounted } from 'vue'
 import { getInnerEdgeMarkersGeometry, getOuterEdgeMarkersGeometry } from "../utils/selectedMarker";
+import { clamp } from "three/src/math/MathUtils";
 
-let renderer: THREE.Renderer, scene: THREE.Scene, camera: THREE.Camera;
+let renderer: THREE.Renderer
+let scene: THREE.Scene
+let camera: THREE.Camera
+let raycaster: THREE.Raycaster
 let sphere: THREE.Mesh;
 let vertexColorIds: Int32Array; // WebGl doesn't allow 8-bit arrays as attributes.
 let cameraZoom = 390;
@@ -21,6 +25,7 @@ let zoomAcceleration = 0.03
 let zoomDampening = 0.05
 let zoomSpeed = 0
 let zoomSpeedMax = 1
+let zoomScrollSpeed = 0.0005
 let addedMeshes: THREE.Mesh[] = []
 
 addUpdateListener((position, colorId) => {
@@ -51,6 +56,32 @@ const props = defineProps<{
 
 const emit = defineEmits(['selectPosition'])
 
+const triangleClick = (event: MouseEvent) => {
+  const mouseX = ( event.clientX / window.innerWidth ) * 2 - 1;
+  const mouseY = - ( event.clientY / window.innerHeight ) * 2 + 1;
+  const mouse = new THREE.Vector2( mouseX, mouseY);
+
+  raycaster.setFromCamera( mouse, camera );
+  const intersects = raycaster.intersectObjects( [sphere], true );
+
+  // if there is one (or more) intersections
+  if ( intersects.length > 0 ) {
+    const face = intersects[ 0 ].face as THREE.Face;
+    emit('selectPosition', Math.round(face.a / 3))
+  }
+}
+
+function wheelEventHandler (event: WheelEvent) {
+  const delta = event.deltaY * zoomScrollSpeed
+  const currentZoom  = camera.position.length()
+  const newZoom = clamp(currentZoom * (1 + delta), minCameraDistance, maxCameraDistance)
+  setZoom(newZoom)
+  event.preventDefault()
+  requestAnimationFrame(() => {
+    renderer.render(scene, camera)
+  })
+}
+
 function animateControls () {
   if (
       rotationSpeed === 0 && props.rotateDirection === 0 &&
@@ -75,8 +106,8 @@ function animateControls () {
     }
   }
   // Clamp the speed
-  rotationSpeed = Math.max(Math.min(rotationSpeed, rotationSpeedMax), -rotationSpeedMax)
-  zoomSpeed = Math.max(Math.min(zoomSpeed, zoomSpeedMax), -zoomSpeedMax)
+  rotationSpeed = clamp(rotationSpeed, -rotationSpeedMax, rotationSpeedMax)
+  zoomSpeed = clamp(zoomSpeed, -zoomSpeedMax, zoomSpeedMax)
 
   const deltaTime = (Date.now() - animateLastFrameTime) / 1000
 
@@ -84,28 +115,25 @@ function animateControls () {
   camera.rotation.z += rotationSpeed * deltaTime;
 
   // Perform zoom, but only if the zoom limits have not be exceeded.
-  const newCameraPosition = (new THREE.Vector3()).copy(camera.position).multiplyScalar((1 - zoomSpeed * deltaTime))
-  const distance = newCameraPosition.distanceTo(new THREE.Vector3(0, 0, 0))
-  if (distance <= minCameraDistance) {
+  const currentZoom  = camera.position.length()
+  const newZoom = clamp(currentZoom * (1 - zoomSpeed * deltaTime), minCameraDistance, maxCameraDistance)
+  if (newZoom == minCameraDistance) {
     zoomSpeed = 0
-    const minCameraPosition = camera.position.normalize().multiplyScalar(minCameraDistance)
-    camera.position.x = minCameraPosition.x;
-    camera.position.y = minCameraPosition.y;
-    camera.position.z = minCameraPosition.z;
-  } else if (distance >= maxCameraDistance) {
+    setZoom(minCameraDistance)
+  } else if (newZoom >= maxCameraDistance) {
     zoomSpeed = 0
-    const maxCameraPosition = camera.position.normalize().multiplyScalar(maxCameraDistance)
-    camera.position.x = maxCameraPosition.x;
-    camera.position.y = maxCameraPosition.y;
-    camera.position.z = maxCameraPosition.z;
+    setZoom(maxCameraDistance)
   } else {
-    camera.position.x = newCameraPosition.x;
-    camera.position.y = newCameraPosition.y;
-    camera.position.z = newCameraPosition.z;
+    setZoom(newZoom)
   }
   renderer.render(scene, camera)
   animateLastFrameTime = Date.now()
   requestAnimationFrame(animateControls)
+}
+
+function setZoom(zoom: number) {
+  const maxCameraPosition = camera.position.normalize().multiplyScalar(zoom)
+  camera.position.copy(maxCameraPosition)
 }
 
 watch(() => [props.rotateDirection, props.zoomDirection], () => {
@@ -170,17 +198,10 @@ onMounted(() => {
   const init = () => {
 
     camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 10000);
-    camera.position.x = cameraVector.x * cameraZoom
-    camera.position.y = cameraVector.y * cameraZoom
-    camera.position.z = cameraVector.z * cameraZoom
+    camera.position.copy(cameraVector.multiplyScalar(cameraZoom))
+    camera.lookAt(new THREE.Vector3())
 
-    var raycaster = new THREE.Raycaster();
-
-    const rotateBtn = document.getElementById('rotate');
-    rotateBtn?.addEventListener('mouse', () => {
-      console.log('hey!')
-      camera.rotation.z += Math.PI / 12;
-    });
+    raycaster = new THREE.Raycaster();
 
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
@@ -240,39 +261,20 @@ void main() {
     sphere = new THREE.Mesh(geometry, shaderMaterial);
     scene.add(sphere);
 
-    const triangleClick = (event: MouseEvent) => {
-      const mouseX = ( event.clientX / window.innerWidth ) * 2 - 1;
-      const mouseY = - ( event.clientY / window.innerHeight ) * 2 + 1;
-      const mouse = new THREE.Vector2( mouseX, mouseY);
-
-      raycaster.setFromCamera( mouse, camera );
-      const intersects = raycaster.intersectObjects( [sphere], true );
-
-      // if there is one (or more) intersections
-      if ( intersects.length > 0 ) {
-        const face = intersects[ 0 ].face as THREE.Face;
-        emit('selectPosition', Math.round(face.a / 3))
-      }
-    }
-
     renderer = new THREE.WebGLRenderer();
     // @ts-ignore
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
-
-    const container = document.getElementById('container');
-    container?.appendChild(renderer.domElement);
-
-    //
     createControls(camera)
     window.addEventListener('resize', onWindowResize);
-
-    container?.addEventListener( 'click', triangleClick, false );
 
     renderer.render(scene, camera);
   }
 
   function createControls( camera: THREE.Camera ) {
+    const container = document.getElementById('container');
+    container?.appendChild(renderer.domElement);
+    container?.addEventListener( 'click', triangleClick, false );
     // touchEnd/mouseUp with no significant dragging should affect zoom + pan + focus (animated zoom).
     // - update selectedPosition
     // - Change zoom level to be 25% of what the current zoom is, with a maxZoom specifically for clicking.
@@ -289,6 +291,8 @@ void main() {
     // SHIFT+RIGHT should title camera right.
     // = or + key should zoom in
     // - or _ key should zoom out
+
+    container?.addEventListener( 'wheel', wheelEventHandler, false );
   }
 
   function onWindowResize() {
