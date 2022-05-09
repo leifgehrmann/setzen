@@ -74,7 +74,7 @@ const triangleClick = (event: MouseEvent) => {
 function wheelEventHandler (event: WheelEvent) {
   const delta = event.deltaY * zoomScrollSpeed
   const currentZoom  = camera.position.length()
-  const newZoom = clamp(currentZoom * (1 + delta), minCameraDistance, maxCameraDistance)
+  const newZoom = clamp(currentZoom * (1 - delta), minCameraDistance, maxCameraDistance)
   setZoom(newZoom)
   event.preventDefault()
   requestAnimationFrame(() => {
@@ -292,7 +292,7 @@ void main() {
     // = or + key should zoom in
     // - or _ key should zoom out
 
-    container?.addEventListener( 'wheel', wheelEventHandler, false );
+    container?.addEventListener('wheel', wheelEventHandler, false );
   }
 
   function onWindowResize() {
