@@ -96,6 +96,26 @@ function startWebSocket() {
 
 onMounted(() => {
   startWebSocket()
+
+  window.addEventListener('keydown', (event) => {
+    if (event.code === 'Minus') {
+      updateZoomDirection(-1)
+    } else if (event.code === 'Equal') {
+      updateZoomDirection(1)
+    } else if (event.shiftKey && event.code === 'ArrowLeft') {
+      updateRotateDirection(-1)
+    } else if (event.shiftKey && event.code === 'ArrowRight') {
+      updateRotateDirection(1)
+    }
+  })
+
+  window.addEventListener('keyup', (event) => {
+    if (event.code === 'Minus' || event.code === 'Equal') {
+      updateZoomDirection(0)
+    } else if (event.code === 'ArrowLeft' ||event.code === 'ArrowRight') {
+      updateRotateDirection(0)
+    }
+  })
 })
 
 </script>
