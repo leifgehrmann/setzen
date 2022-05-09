@@ -21,12 +21,19 @@ let rotationAcceleration = 0.03
 let rotationDampening = 0.05
 let rotationSpeed = 0
 let rotationSpeedMax = 2
+let mouseMoveDistanceThreshold = 2
 let zoomAcceleration = 0.03
 let zoomDampening = 0.05
 let zoomSpeed = 0
 let zoomSpeedMax = 1
 let zoomScrollSpeed = 0.0005
 let addedMeshes: THREE.Mesh[] = []
+let mouseDownPosition: THREE.Vector2|null = null
+let mouseMovePosition: THREE.Vector2|null = null
+let mouseMoveDistance: number = 0
+let spinAxisMomentum: THREE.Vector3|null = null
+let spinAngleMomentum: number = 0
+let spinMomentumDampening = 0.01
 
 addUpdateListener((position, colorId) => {
   vertexColorIds[position * 3] = colorId
@@ -56,19 +63,130 @@ const props = defineProps<{
 
 const emit = defineEmits(['selectPosition'])
 
-const triangleClick = (event: MouseEvent) => {
-  const mouseX = ( event.clientX / window.innerWidth ) * 2 - 1;
-  const mouseY = - ( event.clientY / window.innerHeight ) * 2 + 1;
-  const mouse = new THREE.Vector2( mouseX, mouseY);
+function getPointIntersectionAtScreenPosition(
+    mousePosition: THREE.Vector2
+): THREE.Vector3|null {
+  const scenePosition = getScenePosition(mousePosition)
+  raycaster.setFromCamera(scenePosition, camera);
+  return raycaster.ray.intersectSphere(new THREE.Sphere(new THREE.Vector3(), sphereSize / 2), new THREE.Vector3())
+}
 
-  raycaster.setFromCamera( mouse, camera );
+function getObjectIntersectionAtScreenPosition(
+    mousePosition: THREE.Vector2
+): THREE.Intersection<THREE.Object3D>|null {
+  const scenePosition = getScenePosition(mousePosition)
+  raycaster.setFromCamera(scenePosition, camera);
   const intersects = raycaster.intersectObjects( [sphere], true );
 
-  // if there is one (or more) intersections
-  if ( intersects.length > 0 ) {
-    const face = intersects[ 0 ].face as THREE.Face;
-    emit('selectPosition', Math.round(face.a / 3))
+  if ( intersects.length === 0 ) {
+    return null
   }
+  // if there is one (or more) intersections, return the first.
+  return intersects[ 0 ]
+}
+
+function getMousePosition (event: MouseEvent): THREE.Vector2 {
+  return new THREE.Vector2(event.clientX, event.clientY) // 🐭
+}
+
+// Returns the position relative to the center of the screen
+function getScenePosition (clientPosition: THREE.Vector2): THREE.Vector2 {
+  const sceneX = ( clientPosition.x / window.innerWidth ) * 2 - 1
+  const sceneY = - ( clientPosition.y / window.innerHeight ) * 2 + 1
+  return new THREE.Vector2(sceneX, sceneY)
+}
+
+function getCenterScreenPosition (): THREE.Vector2 {
+  return new THREE.Vector2(window.innerWidth / 2, window.innerHeight / 2)
+}
+
+const selectPosition = (mouse: THREE.Vector2) => {
+  const intersection = getObjectIntersectionAtScreenPosition(mouse)
+  if (
+      intersection !== null &&
+      intersection.face !== null &&
+      intersection.face !== undefined
+  ) {
+    emit('selectPosition', Math.round(intersection.face.a / 3))
+  }
+}
+
+function rotateCamera (axis: THREE.Vector3, angle: number) {
+  const quaternion = new THREE.Quaternion().setFromAxisAngle( axis, angle );
+  camera.position.applyQuaternion( quaternion );
+  camera.up.applyQuaternion( quaternion );
+  camera.lookAt(new THREE.Vector3())
+}
+
+function mouseDownEventHandler (event: MouseEvent) {
+  mouseDownPosition = getMousePosition(event)
+  spinAngleMomentum = 0
+  spinAxisMomentum = null
+}
+
+function mouseMoveEventHandler (event: MouseEvent) {
+  if (mouseDownPosition === null) {
+    return // Do nothing if mouseDown has not occurred.
+  }
+  if (mouseMovePosition === null) {
+    mouseMovePosition = mouseDownPosition
+  }
+  const mouseMovePositionNew = getMousePosition(event)
+
+  mouseMoveDistance += mouseMovePosition.distanceTo(mouseMovePositionNew)
+
+  // Rotate camera along axis.
+  if (mouseMoveDistance >= mouseMoveDistanceThreshold) {
+    const centerPosition = getCenterScreenPosition()
+    const centerDeltaPosition = new THREE.Vector2().copy(mouseMovePositionNew)
+    centerDeltaPosition.sub(mouseMovePosition)
+    centerDeltaPosition.negate()
+    centerDeltaPosition.add(centerPosition)
+
+    const centerInt = getPointIntersectionAtScreenPosition(centerPosition)
+    const centerDeltaInt = getPointIntersectionAtScreenPosition(centerDeltaPosition)
+
+    if (centerInt === null || centerDeltaInt === null) {
+      mouseDownPosition = null
+      mouseMovePosition = null
+      mouseMoveDistance = 0
+      return
+    }
+
+    // Set the camera position and look at the origin
+    let axis = new THREE.Vector3().crossVectors(centerInt, centerDeltaInt).normalize()
+    let angle = centerInt.angleTo(centerDeltaInt)
+    rotateCamera(axis, angle)
+
+    spinAxisMomentum = axis
+    spinAngleMomentum = angle
+
+    renderer.render(scene, camera)
+  }
+
+  mouseMovePosition = mouseMovePositionNew
+}
+
+function mouseLeaveEventHandler () {
+  mouseDownPosition = null
+  mouseMovePosition = null
+  mouseMoveDistance = 0
+}
+
+function mouseUpEventHandler (event: MouseEvent) {
+  const mouseUpPosition = getMousePosition(event)
+  if (mouseMoveDistance < mouseMoveDistanceThreshold) {
+    selectPosition(mouseUpPosition)
+    requestAnimationFrame(() => {
+      renderer.render(scene, camera)
+    })
+  }
+  if (spinAngleMomentum > 0) {
+    animateControls()
+  }
+  mouseDownPosition = null
+  mouseMovePosition = null
+  mouseMoveDistance = 0
 }
 
 function wheelEventHandler (event: WheelEvent) {
@@ -85,7 +203,8 @@ function wheelEventHandler (event: WheelEvent) {
 function animateControls () {
   if (
       rotationSpeed === 0 && props.rotateDirection === 0 &&
-      zoomSpeed === 0 && props.zoomDirection === 0
+      zoomSpeed === 0 && props.zoomDirection === 0 &&
+      spinAngleMomentum === 0
   ) {
     return
   }
@@ -105,16 +224,33 @@ function animateControls () {
       zoomSpeed = 0
     }
   }
+  if (spinAngleMomentum > 0) {
+    spinAngleMomentum -= spinMomentumDampening
+    if (spinAngleMomentum < 0.0001) {
+      spinAngleMomentum = 0
+      spinAxisMomentum = null
+    }
+  }
+
   // Clamp the speed
   rotationSpeed = clamp(rotationSpeed, -rotationSpeedMax, rotationSpeedMax)
   zoomSpeed = clamp(zoomSpeed, -zoomSpeedMax, zoomSpeedMax)
 
   const deltaTime = (Date.now() - animateLastFrameTime) / 1000
 
-  // Perform rotation.
-  camera.rotation.z += rotationSpeed * deltaTime;
+  // Perform spinning. 🩰
+  if (spinAxisMomentum !== null) {
+    rotateCamera(spinAxisMomentum, spinAngleMomentum)
+  }
 
-  // Perform zoom, but only if the zoom limits have not be exceeded.
+  // Perform rotation. 🙃
+  if (rotationSpeed !== 0) {
+    const quaternion = new THREE.Quaternion().setFromAxisAngle( camera.position.clone().normalize(), rotationSpeed * deltaTime );
+    camera.up.applyQuaternion(quaternion)
+    camera.lookAt(new THREE.Vector3())
+  }
+
+  // Perform zoom. 🏎 But only if the zoom limits have not be exceeded.
   const currentZoom  = camera.position.length()
   const newZoom = clamp(currentZoom * (1 - zoomSpeed * deltaTime), minCameraDistance, maxCameraDistance)
   if (newZoom == minCameraDistance) {
@@ -273,7 +409,6 @@ void main() {
   function createControls( camera: THREE.Camera ) {
     const container = document.getElementById('container');
     container?.appendChild(renderer.domElement);
-    container?.addEventListener( 'click', triangleClick, false );
     // touchEnd/mouseUp with no significant dragging should affect zoom + pan + focus (animated zoom).
     // - update selectedPosition
     // - Change zoom level to be 25% of what the current zoom is, with a maxZoom specifically for clicking.
@@ -290,8 +425,10 @@ void main() {
     // SHIFT+RIGHT should title camera right.
     // = or + key should zoom in
     // - or _ key should zoom out
-
-    container?.addEventListener('wheel', wheelEventHandler, false );
+    container?.addEventListener('mousedown', mouseDownEventHandler)
+    window?.addEventListener('mousemove', mouseMoveEventHandler)
+    window?.addEventListener('mouseup', mouseUpEventHandler)
+    container?.addEventListener('wheel', wheelEventHandler);
   }
 
   function onWindowResize() {
