@@ -168,15 +168,15 @@ watch(() => [props.selectedPosition], () => {
 
     addedMeshes = []
     const edgeOffset = 10 / props.sphereDetail
-    const edgeLength = 41 / props.sphereDetail
+    const edgeLengthPercentage = 1 / 3
 
-    const outerGeom = getOuterEdgeMarkersGeometry(v1, v2, v3, edgeOffset, edgeLength)
+    const outerGeom = getOuterEdgeMarkersGeometry(v1, v2, v3, edgeOffset, edgeLengthPercentage)
     const outerMesh = new THREE.Mesh(outerGeom, outerMaterial );
     outerMesh.scale.multiplyScalar(1.0001)
     scene.add(outerMesh)
     addedMeshes.push(outerMesh)
 
-    const innerGeom = getInnerEdgeMarkersGeometry(v1, v2, v3, edgeOffset, edgeLength)
+    const innerGeom = getInnerEdgeMarkersGeometry(v1, v2, v3, edgeOffset, edgeLengthPercentage)
     const innerMesh = new THREE.Mesh(innerGeom, innerMaterial );
     innerMesh.scale.multiplyScalar(1.0001)
     scene.add(innerMesh)

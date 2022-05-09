@@ -5,13 +5,13 @@ export function getOuterEdgeMarkersGeometry(
   v1: THREE.Vector3,
   v2: THREE.Vector3,
   edgeOffset: number,
-  edgeLength: number,
+  edgeLengthPercentage: number,
 ): THREE.BufferGeometry {
   const geometry = new THREE.BufferGeometry();
   const positions = new THREE.BufferAttribute(new Float32Array([
-    ...getOuterEdgeMarkerGeometry(v0, v1, v2, edgeOffset, edgeLength),
-    ...getOuterEdgeMarkerGeometry(v2, v0, v1, edgeOffset, edgeLength),
-    ...getOuterEdgeMarkerGeometry(v1, v2, v0, edgeOffset, edgeLength)
+    ...getOuterEdgeMarkerGeometry(v0, v1, v2, edgeOffset, edgeLengthPercentage),
+    ...getOuterEdgeMarkerGeometry(v2, v0, v1, edgeOffset, edgeLengthPercentage),
+    ...getOuterEdgeMarkerGeometry(v1, v2, v0, edgeOffset, edgeLengthPercentage)
   ]), 3)
   geometry.setAttribute('position', positions)
   return geometry
@@ -22,13 +22,13 @@ export function getInnerEdgeMarkersGeometry(
   v1: THREE.Vector3,
   v2: THREE.Vector3,
   edgeOffset: number,
-  edgeLength: number,
+  edgeLengthPercentage: number,
 ): THREE.BufferGeometry {
   const geometry = new THREE.BufferGeometry();
   const positions = new THREE.BufferAttribute(new Float32Array([
-    ...getOuterEdgeMarkerGeometry(v0, v1, v2, -edgeOffset, edgeLength),
-    ...getOuterEdgeMarkerGeometry(v2, v0, v1, -edgeOffset, edgeLength),
-    ...getOuterEdgeMarkerGeometry(v1, v2, v0, -edgeOffset, edgeLength)
+    ...getOuterEdgeMarkerGeometry(v0, v1, v2, -edgeOffset, edgeLengthPercentage),
+    ...getOuterEdgeMarkerGeometry(v2, v0, v1, -edgeOffset, edgeLengthPercentage),
+    ...getOuterEdgeMarkerGeometry(v1, v2, v0, -edgeOffset, edgeLengthPercentage)
   ]), 3)
   geometry.setAttribute('position', positions)
   return geometry
@@ -39,11 +39,11 @@ function getOuterEdgeMarkerGeometry(
   vB: THREE.Vector3,
   vC: THREE.Vector3,
   edgeOffset: number,
-  edgeLength: number,
+  edgeLengthPercentage: number,
 ): Float32Array {
-  const vBA1 = getLengthPoint(vA, vB, edgeLength)
+  const vBA1 = getLengthPoint(vA, vB, edgeLengthPercentage)
   const vBA2 = getOffsetPoint(vB, vBA1, edgeOffset)
-  const vBC1 = getLengthPoint(vC, vB, edgeLength)
+  const vBC1 = getLengthPoint(vC, vB, edgeLengthPercentage)
   const vBC2 = getOffsetPoint(vB, vBC1, -edgeOffset)
   const vE = getMiterPoint(vA, vB, vC, edgeOffset)
 
@@ -88,10 +88,10 @@ function getMiterPoint(
 function getLengthPoint(
   vA: THREE.Vector3,
   vB: THREE.Vector3,
-  length: number
+  lengthPercentage: number
 ): THREE.Vector3 {
   const vBA = copy(vA).sub(vB)
-  const u = vBA.normalize().multiplyScalar(length)
+  const u = vBA.multiplyScalar(lengthPercentage)
   return copy(vB).add(u)
 }
 
