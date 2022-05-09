@@ -181,9 +181,8 @@ watch(() => [props.selectedPosition], () => {
     innerMesh.scale.multiplyScalar(1.0001)
     scene.add(innerMesh)
     addedMeshes.push(innerMesh)
-
-    renderer.render(scene, camera);
   }
+  renderer.render(scene, camera);
 })
 
 onMounted(() => {
