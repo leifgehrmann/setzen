@@ -4,7 +4,8 @@ import { colorFloats } from "../utils/colors"
 import { addUpdateListener, addUpdateBulkListener, stateColorIds } from "../utils/state"
 import { watch, onMounted } from 'vue'
 import { getInnerEdgeMarkersGeometry, getOuterEdgeMarkersGeometry } from "../utils/selectedMarker";
-import { clamp } from "three/src/math/MathUtils";
+import {clamp, damp, lerp} from "three/src/math/MathUtils";
+import {averageVector3} from "../utils/averageVector";
 
 let renderer: THREE.Renderer
 let scene: THREE.Scene
@@ -16,6 +17,7 @@ let cameraZoom = 390;
 let sphereSize = 200;
 let minCameraDistance = sphereSize / 2 + 5
 let maxCameraDistance = cameraZoom * 1.5
+let animated = false
 let animateLastFrameTime = 0
 let rotationAcceleration = 0.03
 let rotationDampening = 0.05
@@ -34,6 +36,13 @@ let mouseMoveDistance: number = 0
 let spinAxisMomentum: THREE.Vector3|null = null
 let spinAngleMomentum: number = 0
 let spinMomentumDampening = 0.01
+let animateToSelectedTimeStart: number = 0
+let animateToSelectedTimeEnd: number = 0
+let animateToSelectedTimeTotal: number = 1000
+let animateToSelectedPosStart: THREE.Vector3|null = null
+let animateToSelectedPosEnd: THREE.Vector3|null = null
+let animateToSelectedZoomStart: number|null = null
+let animateToSelectedZoomEnd: number|null = null
 
 addUpdateListener((position, colorId) => {
   vertexColorIds[position * 3] = colorId
@@ -182,7 +191,7 @@ function mouseUpEventHandler (event: MouseEvent) {
     })
   }
   if (spinAngleMomentum > 0) {
-    animateControls()
+    requestAnimateControls()
   }
   mouseDownPosition = null
   mouseMovePosition = null
@@ -190,6 +199,7 @@ function mouseUpEventHandler (event: MouseEvent) {
 }
 
 function wheelEventHandler (event: WheelEvent) {
+  clearAnimateToSelected()
   const delta = event.deltaY * zoomScrollSpeed
   const currentZoom  = camera.position.length()
   const newZoom = clamp(currentZoom * (1 - delta), minCameraDistance, maxCameraDistance)
@@ -200,12 +210,23 @@ function wheelEventHandler (event: WheelEvent) {
   })
 }
 
+function requestAnimateControls () {
+  if (animated) {
+    return
+  }
+  animated = true
+  animateLastFrameTime = Date.now()
+  requestAnimationFrame(animateControls)
+}
+
 function animateControls () {
   if (
       rotationSpeed === 0 && props.rotateDirection === 0 &&
       zoomSpeed === 0 && props.zoomDirection === 0 &&
-      spinAngleMomentum === 0
+      spinAngleMomentum === 0 &&
+      animateToSelectedPosEnd === null// && animateToSelectedZoom !== null
   ) {
+    animated = false
     return
   }
   if (props.rotateDirection !== 0) {
@@ -243,6 +264,25 @@ function animateControls () {
     rotateCamera(spinAxisMomentum, spinAngleMomentum)
   }
 
+  const animateToSelectedDuration = Math.min(1, (Date.now() - animateToSelectedTimeStart) / animateToSelectedTimeTotal)
+
+  if (animateToSelectedPosEnd !== null) {
+    const animateToSelectedTargetAxis = new THREE.Vector3().crossVectors(animateToSelectedPosStart, animateToSelectedPosEnd).normalize()
+    const animateToSelectedTargetTotalAngle = animateToSelectedPosStart.angleTo(animateToSelectedPosEnd)
+    const animateToSelectedTargetCurrentAngle = animateToSelectedTargetTotalAngle - camera.position.angleTo(animateToSelectedPosEnd)
+    const interpolatedAngle = damp(animateToSelectedTargetCurrentAngle, animateToSelectedTargetTotalAngle, 0.5, animateToSelectedDuration)
+    rotateCamera(animateToSelectedTargetAxis, interpolatedAngle - animateToSelectedTargetCurrentAngle)
+  }
+
+  if (animateToSelectedZoomEnd !== null) {
+    const interpolatedZoom = lerp(animateToSelectedZoomStart, animateToSelectedZoomEnd, animateToSelectedDuration)
+    setZoom(interpolatedZoom)
+  }
+
+  if (animateToSelectedDuration >= 1) {
+    clearAnimateToSelected()
+  }
+
   // Perform rotation. 🙃
   if (rotationSpeed !== 0) {
     const quaternion = new THREE.Quaternion().setFromAxisAngle( camera.position.clone().normalize(), rotationSpeed * deltaTime );
@@ -251,16 +291,18 @@ function animateControls () {
   }
 
   // Perform zoom. 🏎 But only if the zoom limits have not be exceeded.
-  const currentZoom  = camera.position.length()
-  const newZoom = clamp(currentZoom * (1 - zoomSpeed * deltaTime), minCameraDistance, maxCameraDistance)
-  if (newZoom == minCameraDistance) {
-    zoomSpeed = 0
-    setZoom(minCameraDistance)
-  } else if (newZoom >= maxCameraDistance) {
-    zoomSpeed = 0
-    setZoom(maxCameraDistance)
-  } else {
-    setZoom(newZoom)
+  if (zoomSpeed !== 0) {
+    const currentZoom = camera.position.length()
+    const newZoom = clamp(currentZoom * (1 - zoomSpeed * deltaTime), minCameraDistance, maxCameraDistance)
+    if (newZoom == minCameraDistance) {
+      zoomSpeed = 0
+      setZoom(minCameraDistance)
+    } else if (newZoom >= maxCameraDistance) {
+      zoomSpeed = 0
+      setZoom(maxCameraDistance)
+    } else {
+      setZoom(newZoom)
+    }
   }
   renderer.render(scene, camera)
   animateLastFrameTime = Date.now()
@@ -272,9 +314,29 @@ function setZoom(zoom: number) {
   camera.position.copy(maxCameraPosition)
 }
 
+function setAnimateToTarget(target: THREE.Vector3) {
+  const currentCameraZoom = camera.position.length()
+
+  animateToSelectedPosStart = camera.position.clone()
+  animateToSelectedPosEnd = target
+  animateToSelectedZoomStart = currentCameraZoom
+  animateToSelectedZoomEnd = Math.min(minCameraDistance + 10, currentCameraZoom)
+  animateToSelectedTimeStart = Date.now()
+  animateToSelectedTimeEnd = Date.now() + animateToSelectedTimeTotal
+}
+
+function clearAnimateToSelected() {
+  animateToSelectedPosStart = null
+  animateToSelectedPosEnd = null
+  animateToSelectedZoomStart = null
+  animateToSelectedZoomEnd = null
+  animateToSelectedTimeStart = 0
+  animateToSelectedTimeEnd = 0
+}
+
 watch(() => [props.rotateDirection, props.zoomDirection], () => {
-  animateLastFrameTime = Date.now()
-  animateControls()
+  clearAnimateToSelected()
+  requestAnimateControls()
 })
 
 watch(() => [props.selectedPosition], () => {
@@ -317,6 +379,10 @@ watch(() => [props.selectedPosition], () => {
     innerMesh.scale.multiplyScalar(1.0001)
     scene.add(innerMesh)
     addedMeshes.push(innerMesh)
+
+    // Animate to the selected target
+    setAnimateToTarget(averageVector3(v1, v2, v3))
+    requestAnimateControls()
   }
   renderer.render(scene, camera);
 })
