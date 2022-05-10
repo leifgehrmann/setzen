@@ -1,41 +1,49 @@
 <script setup lang="ts">
 import * as THREE from 'three';
-import { colorFloats } from "../utils/colors"
 import { addUpdateListener, addUpdateBulkListener, stateColorIds } from "../utils/state"
 import { watch, onMounted } from 'vue'
-import { getInnerEdgeMarkersGeometry, getOuterEdgeMarkersGeometry } from "../utils/selectedMarker";
 import {clamp, damp, lerp} from "three/src/math/MathUtils";
 import {averageVector3} from "../utils/averageVector";
+import {rotateCameraAlongAxis, rotateCameraAlongEyeAxis, zoomCameraToDistance} from "../utils/cameraActions";
+import {getSphereShader} from "../utils/sphereMaterial";
+import {createSelectedMarker} from "../utils/selectedMarker";
 
 let renderer: THREE.Renderer
 let scene: THREE.Scene
 let camera: THREE.Camera
 let raycaster: THREE.Raycaster
 let sphere: THREE.Mesh;
-let vertexColorIds: Int32Array; // WebGl doesn't allow 8-bit arrays as attributes.
-let cameraZoom = 390;
 let sphereSize = 200;
+let vertexColorIds: Int32Array; // WebGl doesn't allow 8-bit arrays as attributes.
+let selectedMarkerMeshes: THREE.Mesh[] = []
+// Camera zoom settings.
+let initialCameraZoom = 390;
 let minCameraDistance = sphereSize / 2 + 5
-let maxCameraDistance = cameraZoom * 1.5
+let maxCameraDistance = initialCameraZoom * 1.5
+// Used for managing the requestAnimationFrame() function.
 let animated = false
 let animateLastFrameTime = 0
+// Used by the SHIFT + LEFT/RIGHT keys and the ⟳/⟲ control buttons.
 let rotationAcceleration = 0.03
 let rotationDampening = 0.05
 let rotationSpeed = 0
 let rotationSpeedMax = 2
-let mouseMoveDistanceThreshold = 2
+// Used by the -/+ keys and the -/+ control buttons.
 let zoomAcceleration = 0.03
 let zoomDampening = 0.05
 let zoomSpeed = 0
 let zoomSpeedMax = 1
 let zoomScrollSpeed = 0.0005
-let addedMeshes: THREE.Mesh[] = []
+// Used by the mouse (Not touch events!)
 let mouseDownPosition: THREE.Vector2|null = null
 let mouseMovePosition: THREE.Vector2|null = null
 let mouseMoveDistance: number = 0
+let mouseMoveDistanceThreshold = 2
+// Used by the mouse and touch events to spin the camera around the sphere.
 let spinAxisMomentum: THREE.Vector3|null = null
 let spinAngleMomentum: number = 0
 let spinMomentumDampening = 0.01
+// Used when the user mouse-ups or touches a position on the globe.
 let animateToSelectedTimeStart: number = 0
 let animateToSelectedTimeEnd: number = 0
 let animateToSelectedTimeTotal: number = 1000
@@ -43,6 +51,7 @@ let animateToSelectedPosStart: THREE.Vector3|null = null
 let animateToSelectedPosEnd: THREE.Vector3|null = null
 let animateToSelectedZoomStart: number|null = null
 let animateToSelectedZoomEnd: number|null = null
+let animateToSelectedSuggestedZoom: number = minCameraDistance + 10
 
 addUpdateListener((position, colorId) => {
   vertexColorIds[position * 3] = colorId
@@ -120,13 +129,6 @@ const selectPosition = (mouse: THREE.Vector2) => {
   }
 }
 
-function rotateCamera (axis: THREE.Vector3, angle: number) {
-  const quaternion = new THREE.Quaternion().setFromAxisAngle( axis, angle );
-  camera.position.applyQuaternion( quaternion );
-  camera.up.applyQuaternion( quaternion );
-  camera.lookAt(new THREE.Vector3())
-}
-
 function mouseDownEventHandler (event: MouseEvent) {
   mouseDownPosition = getMousePosition(event)
   spinAngleMomentum = 0
@@ -165,7 +167,7 @@ function mouseMoveEventHandler (event: MouseEvent) {
     // Set the camera position and look at the origin
     let axis = new THREE.Vector3().crossVectors(centerInt, centerDeltaInt).normalize()
     let angle = centerInt.angleTo(centerDeltaInt)
-    rotateCamera(axis, angle)
+    rotateCameraAlongAxis(camera, axis, angle)
 
     spinAxisMomentum = axis
     spinAngleMomentum = angle
@@ -203,13 +205,17 @@ function wheelEventHandler (event: WheelEvent) {
   const delta = event.deltaY * zoomScrollSpeed
   const currentZoom  = camera.position.length()
   const newZoom = clamp(currentZoom * (1 - delta), minCameraDistance, maxCameraDistance)
-  setZoom(newZoom)
+  zoomCameraToDistance(camera, newZoom)
   event.preventDefault()
   requestAnimationFrame(() => {
     renderer.render(scene, camera)
   })
 }
 
+/**
+ * To prevent multiple `requestAnimationFrame()` requests happening at once,
+ * we enforce that a request can only be made if one is not already being executed.
+ */
 function requestAnimateControls () {
   if (animated) {
     return
@@ -229,6 +235,8 @@ function animateControls () {
     animated = false
     return
   }
+
+  // Accelerate the rotation speed, otherwise, dampen it.
   if (props.rotateDirection !== 0) {
     rotationSpeed += rotationAcceleration * props.rotateDirection
   } else {
@@ -237,6 +245,8 @@ function animateControls () {
       rotationSpeed = 0
     }
   }
+
+  // Accelerate the zoom speed, otherwise, dampen it.
   if (props.zoomDirection !== 0) {
     zoomSpeed += zoomAcceleration * props.zoomDirection
   } else {
@@ -245,6 +255,8 @@ function animateControls () {
       zoomSpeed = 0
     }
   }
+
+  // Dampen the spin (Used when )
   if (spinAngleMomentum > 0) {
     spinAngleMomentum -= spinMomentumDampening
     if (spinAngleMomentum < 0.0001) {
@@ -253,7 +265,7 @@ function animateControls () {
     }
   }
 
-  // Clamp the speed
+  // Clamp the speed. 🗜
   rotationSpeed = clamp(rotationSpeed, -rotationSpeedMax, rotationSpeedMax)
   zoomSpeed = clamp(zoomSpeed, -zoomSpeedMax, zoomSpeedMax)
 
@@ -261,7 +273,7 @@ function animateControls () {
 
   // Perform spinning. 🩰
   if (spinAxisMomentum !== null) {
-    rotateCamera(spinAxisMomentum, spinAngleMomentum)
+    rotateCameraAlongAxis(camera, spinAxisMomentum, spinAngleMomentum)
   }
 
   const animateToSelectedDuration = Math.min(1, (Date.now() - animateToSelectedTimeStart) / animateToSelectedTimeTotal)
@@ -271,12 +283,12 @@ function animateControls () {
     const animateToSelectedTargetTotalAngle = animateToSelectedPosStart.angleTo(animateToSelectedPosEnd)
     const animateToSelectedTargetCurrentAngle = animateToSelectedTargetTotalAngle - camera.position.angleTo(animateToSelectedPosEnd)
     const interpolatedAngle = damp(animateToSelectedTargetCurrentAngle, animateToSelectedTargetTotalAngle, 0.5, animateToSelectedDuration)
-    rotateCamera(animateToSelectedTargetAxis, interpolatedAngle - animateToSelectedTargetCurrentAngle)
+    rotateCameraAlongAxis(camera, animateToSelectedTargetAxis, interpolatedAngle - animateToSelectedTargetCurrentAngle)
   }
 
   if (animateToSelectedZoomEnd !== null) {
     const interpolatedZoom = lerp(animateToSelectedZoomStart, animateToSelectedZoomEnd, animateToSelectedDuration)
-    setZoom(interpolatedZoom)
+    zoomCameraToDistance(camera, interpolatedZoom)
   }
 
   if (animateToSelectedDuration >= 1) {
@@ -285,9 +297,7 @@ function animateControls () {
 
   // Perform rotation. 🙃
   if (rotationSpeed !== 0) {
-    const quaternion = new THREE.Quaternion().setFromAxisAngle( camera.position.clone().normalize(), rotationSpeed * deltaTime );
-    camera.up.applyQuaternion(quaternion)
-    camera.lookAt(new THREE.Vector3())
+    rotateCameraAlongEyeAxis(camera, rotationSpeed * deltaTime)
   }
 
   // Perform zoom. 🏎 But only if the zoom limits have not be exceeded.
@@ -296,22 +306,17 @@ function animateControls () {
     const newZoom = clamp(currentZoom * (1 - zoomSpeed * deltaTime), minCameraDistance, maxCameraDistance)
     if (newZoom == minCameraDistance) {
       zoomSpeed = 0
-      setZoom(minCameraDistance)
+      zoomCameraToDistance(camera, minCameraDistance)
     } else if (newZoom >= maxCameraDistance) {
       zoomSpeed = 0
-      setZoom(maxCameraDistance)
+      zoomCameraToDistance(camera, maxCameraDistance)
     } else {
-      setZoom(newZoom)
+      zoomCameraToDistance(camera, newZoom)
     }
   }
   renderer.render(scene, camera)
   animateLastFrameTime = Date.now()
   requestAnimationFrame(animateControls)
-}
-
-function setZoom(zoom: number) {
-  const maxCameraPosition = camera.position.normalize().multiplyScalar(zoom)
-  camera.position.copy(maxCameraPosition)
 }
 
 function setAnimateToTarget(target: THREE.Vector3) {
@@ -320,7 +325,7 @@ function setAnimateToTarget(target: THREE.Vector3) {
   animateToSelectedPosStart = camera.position.clone()
   animateToSelectedPosEnd = target
   animateToSelectedZoomStart = currentCameraZoom
-  animateToSelectedZoomEnd = Math.min(minCameraDistance + 10, currentCameraZoom)
+  animateToSelectedZoomEnd = Math.min(animateToSelectedSuggestedZoom, currentCameraZoom)
   animateToSelectedTimeStart = Date.now()
   animateToSelectedTimeEnd = Date.now() + animateToSelectedTimeTotal
 }
@@ -341,47 +346,26 @@ watch(() => [props.rotateDirection, props.zoomDirection], () => {
 
 watch(() => [props.selectedPosition], () => {
   if (props.selectedPosition === null) {
-    // Hide selector.
-    addedMeshes.forEach((mesh) => {
-      scene.remove(mesh)
-    })
-    addedMeshes = []
+    // Remove the marker.
+    selectedMarkerMeshes.forEach((mesh) => { scene.remove(mesh) })
+    selectedMarkerMeshes = []
   } else {
-    // Show selectedPosition.
+    // Display the marker.
     const faceIndex = props.selectedPosition * 3 * 3
-
     // @ts-ignore
     const v1 = new THREE.Vector3(...sphere.geometry.attributes.position.array.slice(faceIndex, faceIndex + 3))
     // @ts-ignore
     const v2 = new THREE.Vector3(...sphere.geometry.attributes.position.array.slice(faceIndex + 3, faceIndex + 6))
     // @ts-ignore
     const v3 = new THREE.Vector3(...sphere.geometry.attributes.position.array.slice(faceIndex + 6, faceIndex + 9))
+    // Remove the old and add the new selected Marker Meshes.
+    selectedMarkerMeshes.forEach((mesh) => { scene.remove(mesh) })
+    selectedMarkerMeshes = createSelectedMarker(v1, v2, v3, props.sphereDetail)
+    selectedMarkerMeshes.forEach((mesh) => { scene.add(mesh) })
 
-    const outerMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff, transparent: true, opacity: 0.6 } );
-    const innerMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, transparent: true, opacity: 0.6 } );
-
-    addedMeshes.forEach((mesh) => {
-      scene.remove(mesh)
-    })
-
-    addedMeshes = []
-    const edgeOffset = 10 / props.sphereDetail
-    const edgeLengthPercentage = 1 / 3
-
-    const outerGeom = getOuterEdgeMarkersGeometry(v1, v2, v3, edgeOffset, edgeLengthPercentage)
-    const outerMesh = new THREE.Mesh(outerGeom, outerMaterial );
-    outerMesh.scale.multiplyScalar(1.0001)
-    scene.add(outerMesh)
-    addedMeshes.push(outerMesh)
-
-    const innerGeom = getInnerEdgeMarkersGeometry(v1, v2, v3, edgeOffset, edgeLengthPercentage)
-    const innerMesh = new THREE.Mesh(innerGeom, innerMaterial );
-    innerMesh.scale.multiplyScalar(1.0001)
-    scene.add(innerMesh)
-    addedMeshes.push(innerMesh)
-
-    // Animate to the selected target
+    // Animate to the selected marker.
     setAnimateToTarget(averageVector3(v1, v2, v3))
+    console.log('selected')
     requestAnimateControls()
   }
   renderer.render(scene, camera);
@@ -390,89 +374,51 @@ watch(() => [props.selectedPosition], () => {
 onMounted(() => {
   let sphereDetail = props.sphereDetail;
   if (window.innerWidth < window.innerHeight) {
-    cameraZoom *= window.innerHeight/window.innerWidth
-    maxCameraDistance = cameraZoom * 1.5
+    initialCameraZoom *= window.innerHeight/window.innerWidth
+    maxCameraDistance = initialCameraZoom * 1.5
   }
+  // Pick a random camera position so the user isn't present with the same view as
+  // everyone else. This should prevent favouritism.
   let cameraVector = new THREE.Vector3(Math.random(), Math.random(), Math.random()).normalize();
-  let cameraTrackballRadius = cameraZoom/cameraVector.distanceTo(new THREE.Vector3(0,0,0)) * cameraZoom
 
   const init = () => {
-
-    camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 10000);
-    camera.position.copy(cameraVector.multiplyScalar(cameraZoom))
+    // Setup the camera.
+    camera = new THREE.PerspectiveCamera(
+        30,
+        window.innerWidth / window.innerHeight,
+        1,
+        10000
+    );
+    camera.position.copy(cameraVector.multiplyScalar(initialCameraZoom))
     camera.lookAt(new THREE.Vector3())
 
     raycaster = new THREE.Raycaster();
 
+    // Setup the Scene with a black background.
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
 
-    const vertexShaderColorIdMapping = colorFloats.map((colorFloatArr, index) => {
-      return `
-    case ${index}:
-      vColor = vec4(
-        ${colorFloatArr[0]},
-        ${colorFloatArr[1]},
-        ${colorFloatArr[2]},
-        1
-      );
-      break;
-`
-    })
-
-    const vertexShader = `
-attribute int vertexColorId;
-varying vec4 vColor;
-
-void main() {
-  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-  switch (vertexColorId) {
-${vertexShaderColorIdMapping.join('')}
-  }
-}
-`
-
-    const fragmentShader = `
-varying vec3 vNormal;
-varying vec2 vUv;
-varying vec4 vColor;
-
-void main() {
-  gl_FragColor = vColor;
-}
-`
-
-    const shaderMaterial = new THREE.ShaderMaterial({
-      vertexShader,
-      fragmentShader,
-      transparent: true,
-      depthTest: true
-    });
-
-
-    const radius = sphereSize/2;
-
+    const radius = sphereSize / 2;
     const geometry = new THREE.IcosahedronGeometry(radius, sphereDetail);
 
-    console.log(geometry.attributes.position.count/3)
+    console.log(geometry.attributes.position.count / 3)
     vertexColorIds = new Int32Array(geometry.attributes.position.count);
-
     geometry.setAttribute('vertexColorId', new THREE.BufferAttribute(vertexColorIds, 1));
 
-    sphere = new THREE.Mesh(geometry, shaderMaterial);
+    sphere = new THREE.Mesh(geometry, getSphereShader());
     scene.add(sphere);
 
+    // Create the renderer.
     renderer = new THREE.WebGLRenderer();
     // @ts-ignore
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
-    createControls(camera)
-    window.addEventListener('resize', onWindowResize);
-
     renderer.render(scene, camera);
+
+    createControls()
   }
 
-  function createControls( camera: THREE.Camera ) {
+  function createControls() {
     const container = document.getElementById('container');
     container?.appendChild(renderer.domElement);
     // touchEnd/mouseUp with no significant dragging should affect zoom + pan + focus (animated zoom).
@@ -495,6 +441,7 @@ void main() {
     window?.addEventListener('mousemove', mouseMoveEventHandler)
     window?.addEventListener('mouseup', mouseUpEventHandler)
     container?.addEventListener('wheel', wheelEventHandler);
+    window.addEventListener('resize', onWindowResize);
   }
 
   function onWindowResize() {
