@@ -1,5 +1,16 @@
 import * as THREE from 'three';
 
+export function averageVector2(...vectors: THREE.Vector2[]) {
+  let avgX = 0, avgY = 0
+  vectors.forEach((v) => {
+    avgX += v.x
+    avgY += v.y
+  })
+  avgX /= vectors.length
+  avgY /= vectors.length
+  return new THREE.Vector2(avgX, avgY)
+}
+
 export function averageVector3(...vectors: THREE.Vector3[]) {
   let avgX = 0, avgY = 0, avgZ = 0
   vectors.forEach((v) => {

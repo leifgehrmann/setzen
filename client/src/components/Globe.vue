@@ -3,10 +3,11 @@ import * as THREE from 'three';
 import { addUpdateListener, addUpdateBulkListener, stateColorIds } from "../utils/state"
 import { watch, onMounted } from 'vue'
 import {clamp, damp, lerp} from "three/src/math/MathUtils";
-import {averageVector3} from "../utils/averageVector";
+import {averageVector2, averageVector3} from "../utils/averageVector";
 import {rotateCameraAlongAxis, rotateCameraAlongEyeAxis, zoomCameraToDistance} from "../utils/cameraActions";
 import {getSphereShader} from "../utils/sphereMaterial";
 import {createSelectedMarker} from "../utils/selectedMarker";
+import {getTouchById} from "../utils/touchUtils";
 
 let renderer: THREE.Renderer
 let scene: THREE.Scene
@@ -39,10 +40,24 @@ let mouseDownPosition: THREE.Vector2|null = null
 let mouseMovePosition: THREE.Vector2|null = null
 let mouseMoveDistance: number = 0
 let mouseMoveDistanceThreshold = 2
+// Used for touch events.
+let touchId1: number|null = null
+let touchId1StartPos: THREE.Vector2|null = null
+let touchId1MovePos: THREE.Vector2|null = null
+let touchId1MoveDistance: number = 0
+let touchId2: number|null = null
+let touchId2StartPos: THREE.Vector2|null = null
+let touchId2MovePos: THREE.Vector2|null = null
+let touchId2MoveDistance: number = 0
+let touchMoveDistanceThreshold = 2
+let touchLastEventTime: number = 0
 // Used by the mouse and touch events to spin the camera around the sphere.
 let spinAxisMomentum: THREE.Vector3|null = null
 let spinAngleMomentum: number = 0
 let spinMomentumDampening = 0.01
+// Used by the touch events to zoom the camera in and out.
+let zoomMomentum = 0
+let zoomMomentumDampening = 0.001
 // Used when the user mouse-ups or touches a position on the globe.
 let animateToSelectedTimeStart: number = 0
 let animateToSelectedTimeEnd: number = 0
@@ -107,6 +122,10 @@ function getMousePosition (event: MouseEvent): THREE.Vector2 {
   return new THREE.Vector2(event.clientX, event.clientY) // 🐭
 }
 
+function getTouchPosition (event: Touch): THREE.Vector2 {
+  return new THREE.Vector2(event.clientX, event.clientY) // 👆
+}
+
 // Returns the position relative to the center of the screen
 function getScenePosition (clientPosition: THREE.Vector2): THREE.Vector2 {
   const sceneX = ( clientPosition.x / window.innerWidth ) * 2 - 1
@@ -131,6 +150,7 @@ const selectPosition = (mouse: THREE.Vector2) => {
 
 function mouseDownEventHandler (event: MouseEvent) {
   mouseDownPosition = getMousePosition(event)
+  // Reset spin.
   spinAngleMomentum = 0
   spinAxisMomentum = null
 }
@@ -185,6 +205,9 @@ function mouseLeaveEventHandler () {
 }
 
 function mouseUpEventHandler (event: MouseEvent) {
+  if (mouseDownPosition === null) {
+    return
+  }
   const mouseUpPosition = getMousePosition(event)
   if (mouseMoveDistance < mouseMoveDistanceThreshold) {
     selectPosition(mouseUpPosition)
@@ -212,6 +235,184 @@ function wheelEventHandler (event: WheelEvent) {
   })
 }
 
+function touchStartEventHandler (event: TouchEvent) {
+  event.preventDefault()
+  const touches = event.changedTouches
+  for (let i = 0; i < touches.length; i++) {
+    const touch = touches[i]
+    if (touchId1 === null) {
+      touchId1 = touch.identifier
+      touchId1StartPos = getTouchPosition(touch)
+      touchId1MoveDistance = 0
+    } else if (touchId2 === null) {
+      touchId2 = touch.identifier
+      touchId2StartPos = getTouchPosition(touch)
+      touchId2MoveDistance = 0
+    }
+  }
+  // Reset touch.
+  zoomMomentum = 0
+  spinAngleMomentum = 0
+  spinAxisMomentum = null
+
+  touchLastEventTime = Date.now()
+}
+
+function touchMoveEventHandler (event: TouchEvent) {
+  event.preventDefault()
+
+  let render = false
+  let touchId1MovePosNew: THREE.Vector3|null = null
+  let touchId2MovePosNew: THREE.Vector3|null = null
+
+  if (touchId1MovePos === null) {
+    touchId1MovePos = touchId1StartPos
+  }
+  if (touchId2MovePos === null) {
+    touchId2MovePos = touchId2StartPos
+  }
+
+  const touch1 = getTouchById(event.touches, touchId1)
+  const touch2 = getTouchById(event.touches, touchId2)
+  if (touch1 !== null) {
+    touchId1MovePosNew = getTouchPosition(touch1)
+    touchId1MoveDistance += touchId1MovePos.distanceTo(touchId1MovePosNew)
+  }
+  if (touch2 !== null) {
+    touchId2MovePosNew = getTouchPosition(touch2)
+    touchId2MoveDistance += touchId2MovePos.distanceTo(touchId2MovePosNew)
+  }
+
+  // Adjust position
+  if (touchId1MoveDistance > touchMoveDistanceThreshold) {
+    const centerPosition = getCenterScreenPosition()
+    let centerDeltaPosition = new THREE.Vector2()
+    let centerInt: THREE.Vector3|null
+    let centerDeltaInt: THREE.Vector3|null
+    if (touch2 === null) {
+      centerDeltaPosition.copy(touchId1MovePosNew)
+      centerDeltaPosition.sub(touchId1MovePos)
+      centerDeltaPosition.negate()
+      centerDeltaPosition.add(centerPosition)
+      centerDeltaInt = getPointIntersectionAtScreenPosition(centerDeltaPosition)
+    } else {
+      centerDeltaPosition.copy(averageVector2(touchId1MovePosNew, touchId2MovePosNew))
+      centerDeltaPosition.sub(averageVector2(touchId1MovePos, touchId2MovePos))
+      centerDeltaPosition.negate()
+      centerDeltaPosition.add(centerPosition)
+      centerDeltaInt = getPointIntersectionAtScreenPosition(centerDeltaPosition)
+    }
+
+    centerInt = getPointIntersectionAtScreenPosition(centerPosition)
+
+    if (centerInt === null || centerDeltaInt === null) {
+      touchId1 = null
+      touchId1StartPos = null
+      touchId1MovePos = null
+      touchId1MoveDistance = 0
+      return
+    }
+
+    // Set the camera position and look at the origin
+    let axis = new THREE.Vector3().crossVectors(centerInt, centerDeltaInt).normalize()
+    let angle = centerInt.angleTo(centerDeltaInt)
+    rotateCameraAlongAxis(camera, axis, angle)
+
+    spinAxisMomentum = axis
+    spinAngleMomentum = angle
+    render = true
+  }
+
+  if (touch2 !== null) {
+    touchId2MovePosNew = getTouchPosition(touch2)
+    touchId2MoveDistance += touchId2MovePos.distanceTo(touchId2MovePosNew)
+
+    if (touchId1MoveDistance > touchMoveDistanceThreshold) {
+      const beforeDelta = touchId1MovePos?.distanceTo(touchId2MovePos)
+      const afterDelta = touchId1MovePosNew?.distanceTo(touchId2MovePosNew)
+      const pinchDelta = afterDelta - beforeDelta
+      const centerPosition = getCenterScreenPosition()
+      const screenDeltaA = centerPosition.clone().add(new THREE.Vector2(pinchDelta / 2, 0))
+      const screenDeltaB = centerPosition.clone().sub(new THREE.Vector2(pinchDelta / 2, 0))
+      const sceneDeltaA = getPointIntersectionAtScreenPosition(screenDeltaA)
+      const sceneDeltaB = getPointIntersectionAtScreenPosition(screenDeltaB)
+      const currentZoom = camera.position.length()
+      if (sceneDeltaA !== null && sceneDeltaB !== null) {
+        let angle = sceneDeltaA.angleTo(sceneDeltaB)
+        if (pinchDelta > 0) {
+          angle *= -1
+        }
+        let zoomFactor = (angle * (1 - Math.min(0.9, (currentZoom - minCameraDistance) / (maxCameraDistance - minCameraDistance)))) * 5
+        zoomMomentum = zoomFactor
+        const newZoom = clamp(currentZoom * (1 + zoomFactor), minCameraDistance, maxCameraDistance)
+        zoomCameraToDistance(camera, newZoom)
+        render = true
+      }
+    }
+  }
+
+  if (touchId1MovePosNew !== null) {
+    touchId1MovePos = touchId1MovePosNew
+  }
+
+  if (touchId2MovePosNew !== null) {
+    touchId2MovePos = touchId2MovePosNew
+  }
+
+  if (render) {
+    renderer.render(scene, camera)
+  }
+
+  touchLastEventTime = Date.now()
+}
+
+function touchEndEventHandler (event: TouchEvent) {
+  const touch1 = getTouchById(event.changedTouches, touchId1)
+  if (touch1 !== null) {
+    touchId1 = null
+    touchId1StartPos = null
+    touchId1MovePos = null
+    touchId1MoveDistance = 0
+
+    // Replace touch1 with touch2 if it exists, and reset touch2
+    if (touchId2 !== null) {
+      const touch2 = getTouchById(event.touches, touchId2)
+      if (touch2 !== null) {
+        touchId1 = touchId2
+        touchId1StartPos = touchId2StartPos
+        touchId1MovePos = touchId2MovePos
+        touchId1MoveDistance = touchId2MoveDistance
+
+        touchId2 = null
+        touchId2StartPos = null
+        touchId2MovePos = null
+        touchId2MoveDistance = 0
+      }
+    }
+  }
+
+  if (touchId2 !== null) {
+    const touch2 = getTouchById(event.changedTouches, touchId2)
+    if (touch2 !== null) {
+      touchId2 = null
+      touchId2StartPos = null
+      touchId2MovePos = null
+      touchId2MoveDistance = 0
+    }
+  }
+
+  if (spinAngleMomentum > 0 || zoomMomentum === 0 && (Date.now() - touchLastEventTime) < 500) {
+    console.log('spinning/zooming', spinAngleMomentum, zoomMomentum)
+    requestAnimateControls()
+  }
+
+  touchLastEventTime = Date.now()
+}
+
+function touchCancelEventHandler (event: TouchEvent) {
+
+}
+
 /**
  * To prevent multiple `requestAnimationFrame()` requests happening at once,
  * we enforce that a request can only be made if one is not already being executed.
@@ -230,11 +431,14 @@ function animateControls () {
       rotationSpeed === 0 && props.rotateDirection === 0 &&
       zoomSpeed === 0 && props.zoomDirection === 0 &&
       spinAngleMomentum === 0 &&
+      zoomMomentum === 0 &&
       animateToSelectedPosEnd === null// && animateToSelectedZoom !== null
   ) {
     animated = false
     return
   }
+
+  const currentZoom = camera.position.length()
 
   // Accelerate the rotation speed, otherwise, dampen it.
   if (props.rotateDirection !== 0) {
@@ -256,12 +460,26 @@ function animateControls () {
     }
   }
 
-  // Dampen the spin (Used when )
+  // Dampen the spin (Used when swiping the mouse or swiping the touch display)
   if (spinAngleMomentum > 0) {
-    spinAngleMomentum -= spinMomentumDampening
+    spinAngleMomentum -= spinMomentumDampening * Math.max(0.01, (currentZoom - minCameraDistance) / (maxCameraDistance - minCameraDistance))
     if (spinAngleMomentum < 0.0001) {
       spinAngleMomentum = 0
       spinAxisMomentum = null
+    }
+  }
+
+  // Dampen the spin (Used when swiping the mouse or swiping the touch display)
+  if (zoomMomentum > 0) {
+    zoomMomentum -= zoomMomentumDampening * Math.max(0.01, (currentZoom - minCameraDistance) / (maxCameraDistance - minCameraDistance))
+    if (zoomMomentum < 0.0001) {
+      zoomMomentum = 0
+    }
+  }
+  if (zoomMomentum < 0) {
+    zoomMomentum += zoomMomentumDampening * Math.max(0.01, (currentZoom - minCameraDistance) / (maxCameraDistance - minCameraDistance))
+    if (zoomMomentum > -0.0001) {
+      zoomMomentum = 0
     }
   }
 
@@ -274,6 +492,12 @@ function animateControls () {
   // Perform spinning. 🩰
   if (spinAxisMomentum !== null) {
     rotateCameraAlongAxis(camera, spinAxisMomentum, spinAngleMomentum)
+  }
+
+  // Perform zooming. 🏎
+  if (zoomMomentum !== 0) {
+    const newZoom = clamp(currentZoom * (1 + zoomMomentum * deltaTime), minCameraDistance, maxCameraDistance)
+    zoomCameraToDistance(camera, newZoom)
   }
 
   const animateToSelectedDuration = Math.min(1, (Date.now() - animateToSelectedTimeStart) / animateToSelectedTimeTotal)
@@ -302,7 +526,6 @@ function animateControls () {
 
   // Perform zoom. 🏎 But only if the zoom limits have not be exceeded.
   if (zoomSpeed !== 0) {
-    const currentZoom = camera.position.length()
     const newZoom = clamp(currentZoom * (1 - zoomSpeed * deltaTime), minCameraDistance, maxCameraDistance)
     if (newZoom == minCameraDistance) {
       zoomSpeed = 0
@@ -438,8 +661,12 @@ onMounted(() => {
     // = or + key should zoom in
     // - or _ key should zoom out
     container?.addEventListener('mousedown', mouseDownEventHandler)
+    container?.addEventListener('touchstart', touchStartEventHandler)
     window?.addEventListener('mousemove', mouseMoveEventHandler)
+    window?.addEventListener('touchmove', touchMoveEventHandler)
     window?.addEventListener('mouseup', mouseUpEventHandler)
+    window?.addEventListener('touchend', touchEndEventHandler)
+    window?.addEventListener('touchcancel', touchCancelEventHandler)
     container?.addEventListener('wheel', wheelEventHandler);
     window.addEventListener('resize', onWindowResize);
   }
