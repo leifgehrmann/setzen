@@ -150,6 +150,7 @@ const selectPosition = (mouse: THREE.Vector2) => {
 
 function mouseDownEventHandler (event: MouseEvent) {
   mouseDownPosition = getMousePosition(event)
+  clearAnimateToSelected()
   // Reset spin.
   spinAngleMomentum = 0
   spinAxisMomentum = null
@@ -159,6 +160,7 @@ function mouseMoveEventHandler (event: MouseEvent) {
   if (mouseDownPosition === null) {
     return // Do nothing if mouseDown has not occurred.
   }
+  clearAnimateToSelected()
   if (mouseMovePosition === null) {
     mouseMovePosition = mouseDownPosition
   }
