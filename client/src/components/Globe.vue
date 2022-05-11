@@ -242,6 +242,7 @@ function wheelEventHandler (event: WheelEvent) {
 
 function touchStartEventHandler (event: TouchEvent) {
   event.preventDefault()
+  clearAnimateToSelected()
   const touches = event.changedTouches
   for (let i = 0; i < touches.length; i++) {
     const touch = touches[i]
@@ -265,6 +266,7 @@ function touchStartEventHandler (event: TouchEvent) {
 
 function touchMoveEventHandler (event: TouchEvent) {
   event.preventDefault()
+  clearAnimateToSelected()
 
   let render = false
   let touchId1MovePosNew: THREE.Vector3|null = null
