@@ -382,11 +382,6 @@ function touchMoveEventHandler (event: TouchEvent) {
 function touchEndEventHandler (event: TouchEvent) {
   const touch1 = getTouchById(event.changedTouches, touchId1)
   if (touch1 !== null) {
-    touchId1 = null
-    touchId1StartPos = null
-    touchId1MovePos = null
-    touchId1MoveDistance = 0
-
     // Replace touch1 with touch2 if it exists, and reset touch2
     if (touchId2 !== null) {
       const touch2 = getTouchById(event.touches, touchId2)
@@ -400,7 +395,29 @@ function touchEndEventHandler (event: TouchEvent) {
         touchId2StartPos = null
         touchId2MovePos = null
         touchId2MoveDistance = 0
+      } else {
+        touchId1 = null
+        touchId1StartPos = null
+        touchId1MovePos = null
+        touchId1MoveDistance = 0
+        touchId2 = null
+        touchId2StartPos = null
+        touchId2MovePos = null
+        touchId2MoveDistance = 0
       }
+    } else {
+      const touch1Pos = getTouchPosition(touch1)
+      if (touchId1MoveDistance < touchMoveDistanceThreshold) {
+        selectPosition(touch1Pos)
+        requestAnimationFrame(() => {
+          renderer.render(scene, camera)
+        })
+      }
+
+      touchId1 = null
+      touchId1StartPos = null
+      touchId1MovePos = null
+      touchId1MoveDistance = 0
     }
   }
 
