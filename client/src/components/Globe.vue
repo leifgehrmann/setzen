@@ -57,7 +57,7 @@ let spinAngleMomentum: number = 0
 let spinMomentumDampening = 0.01
 // Used by the touch events to zoom the camera in and out.
 let zoomMomentum = 0
-let zoomMomentumDampening = 0.001
+let zoomMomentumDampening = 0.1
 // Used by the touch events to rotate the camera.
 let rotateMomentum = 0
 let rotateMomentumDampening = 0.01
@@ -376,10 +376,6 @@ function touchMoveEventHandler (event: TouchEvent) {
     renderer.render(scene, camera)
   }
 
-  if (zoomMomentum !== 0 || rotateMomentum !== 0 || spinAngleMomentum !== 0) {
-    requestAnimateControls()
-  }
-
   touchLastEventTime = Date.now()
 }
 
@@ -418,7 +414,7 @@ function touchEndEventHandler (event: TouchEvent) {
     }
   }
 
-  if (spinAngleMomentum > 0 || zoomMomentum === 0 && (Date.now() - touchLastEventTime) < 500) {
+  if ((spinAngleMomentum > 0 || zoomMomentum !== 0 || rotateMomentum !== 0) && (Date.now() - touchLastEventTime) < 500) {
     console.log('spinning/zooming', spinAngleMomentum, zoomMomentum)
     requestAnimateControls()
   }
