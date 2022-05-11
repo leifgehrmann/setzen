@@ -58,6 +58,9 @@ let spinMomentumDampening = 0.01
 // Used by the touch events to zoom the camera in and out.
 let zoomMomentum = 0
 let zoomMomentumDampening = 0.001
+// Used by the touch events to rotate the camera.
+let rotateMomentum = 0
+let rotateMomentumDampening = 0.01
 // Used when the user mouse-ups or touches a position on the globe.
 let animateToSelectedTimeStart: number = 0
 let animateToSelectedTimeEnd: number = 0
@@ -330,9 +333,15 @@ function touchMoveEventHandler (event: TouchEvent) {
     touchId2MoveDistance += touchId2MovePos.distanceTo(touchId2MovePosNew)
 
     if (touchId1MoveDistance > touchMoveDistanceThreshold) {
-      const beforeDelta = touchId1MovePos?.distanceTo(touchId2MovePos)
-      const afterDelta = touchId1MovePosNew?.distanceTo(touchId2MovePosNew)
-      const pinchDelta = afterDelta - beforeDelta
+      const beforeDelta = touchId1MovePos?.clone()
+      beforeDelta.sub(touchId2MovePos)
+      const afterDelta = touchId1MovePosNew?.clone()
+      afterDelta.sub(touchId2MovePosNew)
+      const angleDelta = afterDelta?.angle() - beforeDelta?.angle()
+      rotateCameraAlongEyeAxis(camera, angleDelta)
+      rotateMomentum = angleDelta
+
+      const pinchDelta = afterDelta?.length() - beforeDelta?.length()
       const centerPosition = getCenterScreenPosition()
       const screenDeltaA = centerPosition.clone().add(new THREE.Vector2(pinchDelta / 2, 0))
       const screenDeltaB = centerPosition.clone().sub(new THREE.Vector2(pinchDelta / 2, 0))
@@ -363,6 +372,10 @@ function touchMoveEventHandler (event: TouchEvent) {
 
   if (render) {
     renderer.render(scene, camera)
+  }
+
+  if (zoomMomentum !== 0 || rotateMomentum !== 0 || spinAngleMomentum !== 0) {
+    requestAnimateControls()
   }
 
   touchLastEventTime = Date.now()
@@ -434,6 +447,7 @@ function animateControls () {
       zoomSpeed === 0 && props.zoomDirection === 0 &&
       spinAngleMomentum === 0 &&
       zoomMomentum === 0 &&
+      rotateMomentum === 0 &&
       animateToSelectedPosEnd === null// && animateToSelectedZoom !== null
   ) {
     animated = false
@@ -485,6 +499,20 @@ function animateControls () {
     }
   }
 
+  // Dampen the rotation (Used when swiping the mouse or swiping the touch display)
+  if (rotateMomentum > 0) {
+    rotateMomentum -= rotateMomentumDampening
+    if (rotateMomentum < 0.0001) {
+      rotateMomentum = 0
+    }
+  }
+  if (rotateMomentum < 0) {
+    rotateMomentum += rotateMomentumDampening
+    if (rotateMomentum > -0.0001) {
+      rotateMomentum = 0
+    }
+  }
+
   // Clamp the speed. 🗜
   rotationSpeed = clamp(rotationSpeed, -rotationSpeedMax, rotationSpeedMax)
   zoomSpeed = clamp(zoomSpeed, -zoomSpeedMax, zoomSpeedMax)
@@ -500,6 +528,11 @@ function animateControls () {
   if (zoomMomentum !== 0) {
     const newZoom = clamp(currentZoom * (1 + zoomMomentum * deltaTime), minCameraDistance, maxCameraDistance)
     zoomCameraToDistance(camera, newZoom)
+  }
+
+  // Perform rotation.
+  if (rotateMomentum !== 0) {
+    rotateCameraAlongEyeAxis(camera, rotateMomentum)
   }
 
   const animateToSelectedDuration = Math.min(1, (Date.now() - animateToSelectedTimeStart) / animateToSelectedTimeTotal)
