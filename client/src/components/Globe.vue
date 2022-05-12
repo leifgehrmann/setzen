@@ -49,7 +49,7 @@ let touchId2: number|null = null
 let touchId2StartPos: THREE.Vector2|null = null
 let touchId2MovePos: THREE.Vector2|null = null
 let touchId2MoveDistance: number = 0
-let touchMoveDistanceThreshold = 2
+let touchMoveDistanceThreshold = 10
 let touchLastEventTime: number = 0
 // Used by the mouse and touch events to spin the camera around the sphere.
 let spinAxisMomentum: THREE.Vector3|null = null
