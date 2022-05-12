@@ -393,50 +393,6 @@ function touchMoveEventHandler (event: TouchEvent) {
 }
 
 function touchEndEventHandler (event: TouchEvent) {
-  if (touchId1 === null) {
-    return
-  }
-  const touch1 = getTouchById(event.changedTouches, touchId1)
-  if (touch1 !== null) {
-    // Replace touch1 with touch2 if it exists, and reset touch2
-    if (touchId2 !== null) {
-      const touch2 = getTouchById(event.touches, touchId2)
-      if (touch2 !== null) {
-        touchId1 = touchId2
-        touchId1StartPos = touchId2StartPos
-        touchId1MovePos = touchId2MovePos
-        touchId1MoveDistance = touchId2MoveDistance
-
-        touchId2 = null
-        touchId2StartPos = null
-        touchId2MovePos = null
-        touchId2MoveDistance = 0
-      } else {
-        touchId1 = null
-        touchId1StartPos = null
-        touchId1MovePos = null
-        touchId1MoveDistance = 0
-        touchId2 = null
-        touchId2StartPos = null
-        touchId2MovePos = null
-        touchId2MoveDistance = 0
-      }
-    } else {
-      const touch1Pos = getTouchPosition(touch1)
-      if (touchId1MoveDistance < touchMoveDistanceThreshold) {
-        selectPosition(touch1Pos)
-        requestAnimationFrame(() => {
-          renderer.render(scene, camera)
-        })
-      }
-
-      touchId1 = null
-      touchId1StartPos = null
-      touchId1MovePos = null
-      touchId1MoveDistance = 0
-    }
-  }
-
   if (touchId2 !== null) {
     const touch2 = getTouchById(event.changedTouches, touchId2)
     if (touch2 !== null) {
@@ -446,10 +402,63 @@ function touchEndEventHandler (event: TouchEvent) {
       touchId2MoveDistance = 0
     }
   }
+  if (touchId1 !== null) {
+    const touch1 = getTouchById(event.changedTouches, touchId1)
+    if (touch1 !== null) {
+      if (touchId2 !== null) {
+        touchId1 = touchId2
+        touchId1StartPos = touchId2StartPos
+        touchId1MovePos = touchId2MovePos
+        touchId1MoveDistance = touchId2MoveDistance
+        touchId2 = null
+        touchId2StartPos = null
+        touchId2MovePos = null
+        touchId2MoveDistance = 0
+      } else {
+        const touch1Pos = getTouchPosition(touch1)
+        if (touchId1MoveDistance < touchMoveDistanceThreshold) {
+          selectPosition(touch1Pos)
+          requestAnimationFrame(() => {
+            renderer.render(scene, camera)
+          })
+        }
+        touchId1 = null
+        touchId1StartPos = null
+        touchId1MovePos = null
+        touchId1MoveDistance = 0
+      }
+    } else {
+    }
+  }
 
-  if ((spinAngleMomentum > 0 || zoomMomentum !== 0 || rotateMomentum !== 0) && (Date.now() - touchLastEventTime) < 500) {
-    console.log('spinning/zooming', spinAngleMomentum, zoomMomentum)
+  if (
+      touchId1 === null && touchId2 === null &&
+      (spinAngleMomentum > 0 || zoomMomentum !== 0 || rotateMomentum !== 0) &&
+      (Date.now() - touchLastEventTime) < 500
+  ) {
     requestAnimateControls()
+  }
+
+  // Clear touches that are no longer being tracked. This can
+  // happen when two fingers come close together, effectively
+  // becoming a single touch.
+  if (touchId2 !== null) {
+    const touch2 = getTouchById(event.touches, touchId2)
+    if (touch2 === null) {
+      touchId2 = null
+      touchId2StartPos = null
+      touchId2MovePos = null
+      touchId2MoveDistance = 0
+    }
+  }
+  if (touchId1 !== null) {
+    const touch1 = getTouchById(event.touches, touchId1)
+    if (touch1 === null) {
+      touchId1 = null
+      touchId1StartPos = null
+      touchId1MovePos = null
+      touchId1MoveDistance = 0
+    }
   }
 
   touchLastEventTime = Date.now()
