@@ -96,6 +96,26 @@ function startWebSocket() {
 
 onMounted(() => {
   startWebSocket()
+
+  window.addEventListener('keydown', (event) => {
+    if (event.code === 'Minus') {
+      updateZoomDirection(-1)
+    } else if (event.code === 'Equal') {
+      updateZoomDirection(1)
+    } else if (event.shiftKey && event.code === 'ArrowLeft') {
+      updateRotateDirection(-1)
+    } else if (event.shiftKey && event.code === 'ArrowRight') {
+      updateRotateDirection(1)
+    }
+  })
+
+  window.addEventListener('keyup', (event) => {
+    if (event.code === 'Minus' || event.code === 'Equal') {
+      updateZoomDirection(0)
+    } else if (event.code === 'ArrowLeft' ||event.code === 'ArrowRight') {
+      updateRotateDirection(0)
+    }
+  })
 })
 
 </script>
@@ -129,7 +149,7 @@ onMounted(() => {
       />
     </div>
     <div
-        class="absolute top-0 right-0 p-4 select-none pointer-events-none"
+        class="absolute top-0 left-0 p-4 select-none pointer-events-none"
     >
       <RoundButton
           @click="showControls = !showControls"
@@ -153,11 +173,7 @@ onMounted(() => {
             'transform': !showControls ? 'translate(0, calc(-4rem - env(safe-area-inset-top)))' : 'translate(0, 0)',
           }"
       >
-        <RoundButton
-            @click="showControls = !showControls"
-            label="Information"
-            :img-src="infoImage"
-        />
+        <div class="w-8"></div>
         <IncrementerButtons
             left-label="Rotate anti-clockwise"
             right-label="Rotate clockwise"
@@ -172,7 +188,11 @@ onMounted(() => {
             :right-img-src="zoomInImage"
             @updateDirection="updateZoomDirection"
         />
-        <div class="w-8"></div>
+        <RoundButton
+            @click="showControls = !showControls"
+            label="Information"
+            :img-src="infoImage"
+        />
       </div>
     </div>
     <div
