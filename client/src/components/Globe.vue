@@ -269,8 +269,8 @@ function touchMoveEventHandler (event: TouchEvent) {
   clearAnimateToSelected()
 
   let render = false
-  let touchId1MovePosNew: THREE.Vector3|null = null
-  let touchId2MovePosNew: THREE.Vector3|null = null
+  let touchId1MovePosNew: THREE.Vector2|null = null
+  let touchId2MovePosNew: THREE.Vector2|null = null
 
   if (touchId1MovePos === null) {
     touchId1MovePos = touchId1StartPos
@@ -279,32 +279,40 @@ function touchMoveEventHandler (event: TouchEvent) {
     touchId2MovePos = touchId2StartPos
   }
 
-  const touch1 = getTouchById(event.touches, touchId1)
-  const touch2 = getTouchById(event.touches, touchId2)
-  if (touch1 !== null) {
+  const touch1 = touchId1 !== null ? getTouchById(event.touches, touchId1) : null
+  const touch2 = touchId2 !== null ? getTouchById(event.touches, touchId2) : null
+  if (touch1 !== null && touchId1MovePos !== null) {
     touchId1MovePosNew = getTouchPosition(touch1)
     touchId1MoveDistance += touchId1MovePos.distanceTo(touchId1MovePosNew)
   }
-  if (touch2 !== null) {
+  if (touch2 !== null && touchId2MovePos !== null) {
     touchId2MovePosNew = getTouchPosition(touch2)
     touchId2MoveDistance += touchId2MovePos.distanceTo(touchId2MovePosNew)
   }
 
   // Adjust position
-  if (touchId1MoveDistance > touchMoveDistanceThreshold) {
+  if (
+      touchId1MoveDistance > touchMoveDistanceThreshold &&
+      touchId1MovePos !== null &&
+      touchId1MovePosNew !== null
+  ) {
     const centerPosition = getCenterScreenPosition()
     let centerDeltaPosition = new THREE.Vector2()
     let centerInt: THREE.Vector3|null
     let centerDeltaInt: THREE.Vector3|null
-    if (touch2 === null) {
-      centerDeltaPosition.copy(touchId1MovePosNew)
-      centerDeltaPosition.sub(touchId1MovePos)
+    if (
+        touch2 !== null &&
+        touchId2MovePos !== null &&
+        touchId2MovePosNew !== null
+    ) {
+      centerDeltaPosition.copy(averageVector2(touchId1MovePosNew, touchId2MovePosNew))
+      centerDeltaPosition.sub(averageVector2(touchId1MovePos, touchId2MovePos))
       centerDeltaPosition.negate()
       centerDeltaPosition.add(centerPosition)
       centerDeltaInt = getPointIntersectionAtScreenPosition(centerDeltaPosition)
     } else {
-      centerDeltaPosition.copy(averageVector2(touchId1MovePosNew, touchId2MovePosNew))
-      centerDeltaPosition.sub(averageVector2(touchId1MovePos, touchId2MovePos))
+      centerDeltaPosition.copy(touchId1MovePosNew)
+      centerDeltaPosition.sub(touchId1MovePos)
       centerDeltaPosition.negate()
       centerDeltaPosition.add(centerPosition)
       centerDeltaInt = getPointIntersectionAtScreenPosition(centerDeltaPosition)
@@ -330,20 +338,25 @@ function touchMoveEventHandler (event: TouchEvent) {
     render = true
   }
 
-  if (touch2 !== null) {
+  if (touch2 !== null && touchId2MovePos !== null) {
     touchId2MovePosNew = getTouchPosition(touch2)
     touchId2MoveDistance += touchId2MovePos.distanceTo(touchId2MovePosNew)
 
-    if (touchId1MoveDistance > touchMoveDistanceThreshold) {
-      const beforeDelta = touchId1MovePos?.clone()
+    if (
+        touchId1MoveDistance > touchMoveDistanceThreshold &&
+        touchId1MovePos !== null &&
+        touchId2MovePos !== null &&
+        touchId1MovePosNew !== null
+    ) {
+      const beforeDelta = touchId1MovePos.clone()
       beforeDelta.sub(touchId2MovePos)
-      const afterDelta = touchId1MovePosNew?.clone()
+      const afterDelta = touchId1MovePosNew.clone()
       afterDelta.sub(touchId2MovePosNew)
       const angleDelta = afterDelta?.angle() - beforeDelta?.angle()
       rotateCameraAlongEyeAxis(camera, angleDelta)
       rotateMomentum = angleDelta
 
-      const pinchDelta = afterDelta?.length() - beforeDelta?.length()
+      const pinchDelta = afterDelta.length() - beforeDelta.length()
       const centerPosition = getCenterScreenPosition()
       const screenDeltaA = centerPosition.clone().add(new THREE.Vector2(pinchDelta / 2, 0))
       const screenDeltaB = centerPosition.clone().sub(new THREE.Vector2(pinchDelta / 2, 0))
@@ -380,6 +393,9 @@ function touchMoveEventHandler (event: TouchEvent) {
 }
 
 function touchEndEventHandler (event: TouchEvent) {
+  if (touchId1 === null) {
+    return
+  }
   const touch1 = getTouchById(event.changedTouches, touchId1)
   if (touch1 !== null) {
     // Replace touch1 with touch2 if it exists, and reset touch2
@@ -552,7 +568,7 @@ function animateControls () {
 
   const animateToSelectedDuration = Math.min(1, (Date.now() - animateToSelectedTimeStart) / animateToSelectedTimeTotal)
 
-  if (animateToSelectedPosEnd !== null) {
+  if (animateToSelectedPosStart !== null && animateToSelectedPosEnd !== null) {
     const animateToSelectedTargetAxis = new THREE.Vector3().crossVectors(animateToSelectedPosStart, animateToSelectedPosEnd).normalize()
     const animateToSelectedTargetTotalAngle = animateToSelectedPosStart.angleTo(animateToSelectedPosEnd)
     const animateToSelectedTargetCurrentAngle = animateToSelectedTargetTotalAngle - camera.position.angleTo(animateToSelectedPosEnd)
@@ -560,7 +576,7 @@ function animateControls () {
     rotateCameraAlongAxis(camera, animateToSelectedTargetAxis, interpolatedAngle - animateToSelectedTargetCurrentAngle)
   }
 
-  if (animateToSelectedZoomEnd !== null) {
+  if (animateToSelectedZoomStart !== null && animateToSelectedZoomEnd !== null) {
     const interpolatedZoom = lerp(animateToSelectedZoomStart, animateToSelectedZoomEnd, animateToSelectedDuration)
     zoomCameraToDistance(camera, interpolatedZoom)
   }
