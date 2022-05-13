@@ -70,6 +70,7 @@ let animateToSelectedPosEnd: THREE.Vector3|null = null
 let animateToSelectedZoomStart: number|null = null
 let animateToSelectedZoomEnd: number|null = null
 let animateToSelectedSuggestedZoom: number = minCameraDistance + 10
+let animateToSelectedSuggestedMaxZoom: number = minCameraDistance + 150
 
 addUpdateListener((position, colorId) => {
   vertexColorIds[position * 3] = colorId
@@ -623,7 +624,11 @@ function setAnimateToTarget(target: THREE.Vector3) {
   animateToSelectedPosStart = camera.position.clone()
   animateToSelectedPosEnd = target
   animateToSelectedZoomStart = currentCameraZoom
-  animateToSelectedZoomEnd = Math.min(animateToSelectedSuggestedZoom, currentCameraZoom)
+  if (currentCameraZoom < animateToSelectedSuggestedMaxZoom) {
+    animateToSelectedZoomEnd = currentCameraZoom
+  } else {
+    animateToSelectedZoomEnd = animateToSelectedSuggestedZoom
+  }
   animateToSelectedTimeStart = Date.now()
   animateToSelectedTimeEnd = Date.now() + animateToSelectedTimeTotal
 }
