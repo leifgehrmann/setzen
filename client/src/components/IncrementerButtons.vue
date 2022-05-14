@@ -3,6 +3,7 @@
     <button
         ref="leftButton"
         class="bg-neutral-800/70 w-1/2 h-full rounded-l-full"
+        :disabled="disabled"
         :aria-label="rightLabel"
         :class="{'bg-neutral-700/70': direction === -1}"
         @mousedown="decrement()"
@@ -21,6 +22,7 @@
         ref="rightButton"
         class="bg-neutral-800/70 w-1/2 h-full rounded-r-full"
         style="box-shadow: -1px 0 0 0 rgba(255, 255, 255, 0.15)"
+        :disabled="disabled"
         :aria-label="rightLabel"
         :class="{'bg-neutral-700/70': direction === 1}"
         @mousedown="increment()"
@@ -46,6 +48,7 @@ defineProps({
   leftImgSrc: String,
   rightLabel: String,
   rightImgSrc: String,
+  disabled: Boolean,
 })
 
 const emit = defineEmits(['updateDirection'])

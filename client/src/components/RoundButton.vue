@@ -1,6 +1,7 @@
 <template>
   <button
       :aria-label="label"
+      :disabled="disabled"
       class="w-8 h-8 bg-neutral-800/70 backdrop-blur-md rounded-full pointer-events-auto"
   >
     <img
@@ -16,7 +17,8 @@
 <script setup lang="ts">
 defineProps({
   label: String,
-  imgSrc: String
+  imgSrc: String,
+  disabled: Boolean
 })
 </script>
 

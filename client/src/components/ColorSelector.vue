@@ -1,11 +1,32 @@
 <template>
   <div class="overflow-x-scroll pt-4 h-32 relative text-center">
     <span class="inline-block">
-      <svg class="h-20" style="padding-left: 33vw; padding-right: 33vw" :viewBox="`0 0 ${colors.length*80+50} ${86.6}`">
-        <g v-for="(color, index) in colors">
-          <polygon :points="points(index)" :fill="color" class="cursor-pointer pointer-events-auto" @click="log(index)"/>
-        </g>
-      </svg>
+      <div class="flex flex-row" style="padding-left: 33vw; padding-right: 33vw">
+        <div
+            v-for="(color, index) in colors"
+            class="h-20 relative"
+            style="margin-right: -1rem"
+        >
+          <button
+              class="absolute w-10 h-10 rounded-full"
+              style="left: calc(50% - 1.25rem); top: calc(50% - 1.25rem)"
+              @click="select(index)"
+              :disabled="disabled"
+              :aria-label="labels[index]"
+          />
+          <svg
+              class="h-20"
+              :viewBox="`0 0 ${100} ${86.6}`"
+          >
+            <polygon
+                :points="points(index)"
+                :fill="color"
+                class="cursor-pointer pointer-events-auto"
+                @click="select(index)"
+            />
+          </svg>
+        </div>
+      </div>
       <!--<input v-for="(color, index) in colors"
            :value="index"
            v-model="selectedIndex"
@@ -27,21 +48,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { colors } from "../utils/colors"
+import { onMounted } from 'vue'
+import {colors, getColorIdFromKeyEvent, labels} from "../utils/colors"
 
 const props = defineProps({
-  up: Boolean
+  up: Boolean,
+  disabled: Boolean
 });
 
 const emit = defineEmits(['selectColorId'])
 
-let selectedIndex = ref(0)
-
 function points(index: number): string {
-  let lx = index * 80
-  let mx = index * 80 + 50
-  let rx = index * 80 + 100
+  let lx = 0
+  let mx = 50
+  let rx = 100
   let ty = 0
   let by = 86.6
   if (index % 2 == 0) {
@@ -51,10 +71,23 @@ function points(index: number): string {
   return `${lx},${ty} ${mx},${by} ${rx},${ty}`
 }
 
-const log = (index: number) => {
-  selectedIndex = ref(index)
+const select = (index: number) => {
   emit('selectColorId', index)
 }
+
+onMounted(() => {
+  window.addEventListener('keypress', (event) => {
+    console.log('keypress')
+    if (props.disabled) {
+      return
+    }
+    const colorId = getColorIdFromKeyEvent(event)
+    if (colorId === null) {
+      return
+    }
+    emit('selectColorId', colorId)
+  })
+})
 </script>
 
 <style scoped>

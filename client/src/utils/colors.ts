@@ -33,6 +33,76 @@ export const colors = [
   '#ffffff'
 ]
 
+export const labels = [
+  'Burgandy',
+  'Dark red',
+  'Red',
+  'Orange',
+  'Yellow',
+  'Pale yellow',
+  'Dark green',
+  'Green',
+  'Light green',
+  'Dark teal',
+  'Teal',
+  'Light teal',
+  'Dark blue',
+  'Blue',
+  'Light blue',
+  'Indigo',
+  'Periwinkle',
+  'Lavender',
+  'Dark purple',
+  'Purple',
+  'Pale Purple',
+  'Magenta',
+  'Pink',
+  'Light pink',
+  'Dark brown',
+  'Brown',
+  'Beige',
+  'Black',
+  'Dark gray',
+  'Gray',
+  'Light gray',
+  'White'
+]
+
+const keyCodes = [
+  'Digit1',
+  'Digit2',
+  'Digit3',
+  'Digit4',
+  'Digit5',
+  'Digit6',
+  'KeyQ',
+  'KeyW',
+  'KeyE',
+  'KeyR',
+  'KeyT',
+  'KeyY',
+  'KeyA',
+  'KeyS',
+  'KeyD',
+  'KeyF',
+  'KeyG',
+  'KeyH',
+  'KeyZ',
+  'KeyX',
+  'KeyC',
+  'KeyV',
+  'KeyB',
+  'KeyN',
+  'Digit9',
+  'Digit8',
+  'Digit7',
+  'KeyK',
+  'KeyJ',
+  'KeyG',
+  'KeyI',
+  'KeyU'
+]
+
 export const colorFloats = colors.map((color) => {
   const colorDecimal = parseInt('0x' + color.substring(1))
   return [
@@ -41,3 +111,8 @@ export const colorFloats = colors.map((color) => {
     (colorDecimal&255)/255
   ]
 })
+
+export function getColorIdFromKeyEvent (event: KeyboardEvent): number|null {
+  const index = keyCodes.indexOf(event.code)
+  return index !== -1 ? index : null
+}

@@ -116,6 +116,26 @@ onMounted(() => {
       updateRotateDirection(0)
     }
   })
+
+  window.addEventListener('keypress', (event) => {
+    if (event.code === 'Escape') {
+      selectPosition(null)
+    } else if (event.code === 'Period') {
+      const container = document.getElementById('container')
+      if (container !== null) {
+        container.dispatchEvent(new MouseEvent('mousedown', {
+          bubbles: true,
+          clientX: window.innerWidth / 2,
+          clientY: window.innerHeight / 2
+        }))
+        container.dispatchEvent(new MouseEvent('mouseup', {
+          bubbles: true,
+          clientX: window.innerWidth / 2,
+          clientY: window.innerHeight / 2
+        }))
+      }
+    }
+  })
 })
 
 </script>
@@ -177,6 +197,7 @@ onMounted(() => {
         <IncrementerButtons
             left-label="Rotate anti-clockwise"
             right-label="Rotate clockwise"
+            :disabled="!showControls"
             :left-img-src="rotateAntiClockwiseImage"
             :right-img-src="rotateClockwiseImage"
             @updateDirection="updateRotateDirection"
@@ -184,14 +205,16 @@ onMounted(() => {
         <IncrementerButtons
             left-label="Zoom out"
             right-label="Zoom in"
+            :disabled="!showControls"
             :left-img-src="zoomOutImage"
             :right-img-src="zoomInImage"
             @updateDirection="updateZoomDirection"
         />
         <RoundButton
-            @click="showControls = !showControls"
             label="Information"
+            :disabled="!showControls"
             :img-src="infoImage"
+            @click="showControls = !showControls"
         />
       </div>
     </div>
@@ -203,6 +226,7 @@ onMounted(() => {
           @click="selectPosition(null)"
           label="Close color selection"
           class="transition-all ease-in-out duration-300 transform"
+          :disabled="selectedPosition === null"
           :img-src="closeImage"
           :style="{
             'transform': selectedPosition === null ? 'translate(0, calc(12rem + env(safe-area-inset-bottom)))' : 'translate(0, 0)',
@@ -224,7 +248,10 @@ onMounted(() => {
             'transform': selectedPosition === null ? 'translate(0, calc(8rem + env(safe-area-inset-bottom)))' : 'translate(0, 0)',
           }"
       >
-        <ColorSelector @select-color-id="updateColorId"/>
+        <ColorSelector
+            :disabled="selectedPosition === null"
+            @select-color-id="updateColorId"
+        />
       </div>
     </div>
   </div>
