@@ -28,6 +28,8 @@ let sphereFaceCount = 20 * (sphereDetail + 1) * (sphereDetail + 1)
 let chunkSize = 16875 // See /server/sendmessage/app.js
 
 let showControls = ref(false)
+let cameraMoveXDirection = ref(0)
+let cameraMoveYDirection = ref(0)
 let cameraZoomDirection = ref(0)
 let cameraRotateDirection = ref(0)
 let percentLoaded = ref(0)
@@ -40,6 +42,14 @@ loadFromLocalStorage()
 addUpdateBulkListener(() => { persistToLocalStorage() })
 addUpdateListener(() => { persistToLocalStorage() })
 triggerBulkUpdate()
+
+function updateMoveXDirection (newDirection: number) {
+  cameraMoveXDirection.value = newDirection
+}
+
+function updateMoveYDirection(newDirection: number) {
+  cameraMoveYDirection.value = newDirection
+}
 
 function updateRotateDirection (newDirection: number) {
   cameraRotateDirection.value = newDirection
@@ -110,14 +120,25 @@ onMounted(() => {
       updateRotateDirection(-1)
     } else if (event.shiftKey && event.code === 'ArrowRight') {
       updateRotateDirection(1)
+    } else if (event.code === 'ArrowLeft') {
+      updateMoveXDirection(-1)
+    } else if (event.code === 'ArrowRight') {
+      updateMoveXDirection(1)
+    } else if (event.code === 'ArrowDown') {
+      updateMoveYDirection(-1)
+    } else if (event.code === 'ArrowUp') {
+      updateMoveYDirection(1)
     }
   })
 
   window.addEventListener('keyup', (event) => {
     if (event.code === 'Minus' || event.code === 'Equal') {
       updateZoomDirection(0)
-    } else if (event.code === 'ArrowLeft' ||event.code === 'ArrowRight') {
+    } else if (event.code === 'ArrowLeft' || event.code === 'ArrowRight') {
       updateRotateDirection(0)
+      updateMoveXDirection(0)
+    } else if (event.code === 'ArrowDown' || event.code === 'ArrowUp') {
+      updateMoveYDirection(0)
     }
   })
 
@@ -149,6 +170,8 @@ onMounted(() => {
     <Globe
         :sphere-detail="sphereDetail"
         :selected-position="selectedPosition"
+        :move-x-direction="cameraMoveXDirection"
+        :move-y-direction="cameraMoveYDirection"
         :rotate-direction="cameraRotateDirection"
         :zoom-direction="cameraZoomDirection"
         @select-position="selectPosition"

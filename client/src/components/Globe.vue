@@ -24,6 +24,12 @@ let maxCameraDistance = initialCameraZoom * 1.5
 // Used for managing the requestAnimationFrame() function.
 let animated = false
 let animateLastFrameTime = 0
+// Used by the LEFT/RIGHT/UP/DOWN keys
+let moveAcceleration = 0.5
+let moveDampening = 0.5
+let moveXSpeed = 0
+let moveYSpeed = 0
+let moveSpeedMax = 0.01
 // Used by the SHIFT + LEFT/RIGHT keys and the ⟳/⟲ control buttons.
 let rotationAcceleration = 0.03
 let rotationDampening = 0.2
@@ -94,8 +100,10 @@ addUpdateBulkListener(() => {
 const props = defineProps<{
   sphereDetail: number
   selectedPosition: number|null
-  rotateDirection: number
-  zoomDirection: number
+  moveXDirection: number // -1, 0, 1
+  moveYDirection: number // -1, 0, 1
+  rotateDirection: number // -1, 0, 1
+  zoomDirection: number // -1, 0, 1
 }>()
 
 const emit = defineEmits(['selectPosition'])
@@ -484,6 +492,8 @@ function requestAnimateControls () {
 
 function animateControls () {
   if (
+      moveXSpeed === 0 && props.moveXDirection === 0 &&
+      moveYSpeed === 0 && props.moveYDirection === 0 &&
       rotationSpeed === 0 && props.rotateDirection === 0 &&
       zoomSpeed === 0 && props.zoomDirection === 0 &&
       spinAngleMomentum === 0 &&
@@ -496,6 +506,26 @@ function animateControls () {
   }
 
   const currentZoom = camera.position.length()
+
+  // Accelerate the move speed, otherwise, dampen it.
+  if (props.moveXDirection !== 0) {
+    moveXSpeed += moveAcceleration * props.moveXDirection * Math.max(0.0001, (currentZoom - minCameraDistance) / (maxCameraDistance - minCameraDistance))
+    console.log(moveXSpeed)
+  } else {
+    moveXSpeed -= Math.min(moveDampening, Math.abs(moveXSpeed)) * ((moveXSpeed > 0) ? 1 : -1)
+    if (moveXSpeed < 0.0001 && moveXSpeed > -0.0001) {
+      moveXSpeed = 0
+    }
+    console.log(moveXSpeed)
+  }
+  if (props.moveYDirection !== 0) {
+    moveYSpeed += moveAcceleration * props.moveYDirection * Math.max(0.0001, (currentZoom - minCameraDistance) / (maxCameraDistance - minCameraDistance))
+  } else {
+    moveYSpeed -= Math.min(moveDampening, Math.abs(moveYSpeed)) * ((moveYSpeed > 0) ? 1 : -1)
+    if (moveYSpeed < 0.0001 && moveYSpeed > -0.0001) {
+      moveYSpeed = 0
+    }
+  }
 
   // Accelerate the rotation speed, otherwise, dampen it.
   if (props.rotateDirection !== 0) {
@@ -555,6 +585,8 @@ function animateControls () {
   }
 
   // Clamp the speed. 🗜
+  moveXSpeed = clamp(moveXSpeed, -moveSpeedMax * Math.max(0.01, (currentZoom - minCameraDistance) / (maxCameraDistance - minCameraDistance)), moveSpeedMax * Math.max(0.01, (currentZoom - minCameraDistance) / (maxCameraDistance - minCameraDistance)))
+  moveYSpeed = clamp(moveYSpeed, -moveSpeedMax * Math.max(0.01, (currentZoom - minCameraDistance) / (maxCameraDistance - minCameraDistance)), moveSpeedMax * Math.max(0.01, (currentZoom - minCameraDistance) / (maxCameraDistance - minCameraDistance)))
   rotationSpeed = clamp(rotationSpeed, -rotationSpeedMax, rotationSpeedMax)
   zoomSpeed = clamp(zoomSpeed, -zoomSpeedMax, zoomSpeedMax)
 
@@ -593,6 +625,16 @@ function animateControls () {
 
   if (animateToSelectedDuration >= 1) {
     clearAnimateToSelected()
+  }
+
+  // Perform movement.
+  if (moveYSpeed !== 0 || moveXSpeed !== 0) {
+    const moveVector = new THREE.Vector2(-moveYSpeed, moveXSpeed) // Rotated -90 deg
+    const moveAxis = new THREE.Vector3().crossVectors(camera.position, camera.up).normalize()
+    const moveQuaternion = new THREE.Quaternion().setFromAxisAngle( camera.position.clone().normalize(), moveVector.angle());
+    moveAxis.applyQuaternion(moveQuaternion)
+    const moveAngle = moveVector.length()
+    rotateCameraAlongAxis(camera, moveAxis, -moveAngle)
   }
 
   // Perform rotation. 🙃
@@ -642,7 +684,7 @@ function clearAnimateToSelected() {
   animateToSelectedTimeEnd = 0
 }
 
-watch(() => [props.rotateDirection, props.zoomDirection], () => {
+watch(() => [props.moveXDirection, props.moveYDirection, props.rotateDirection, props.zoomDirection], () => {
   clearAnimateToSelected()
   requestAnimateControls()
 })
