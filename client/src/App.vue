@@ -97,6 +97,10 @@ function startWebSocket() {
 onMounted(() => {
   startWebSocket()
 
+  if (window.innerWidth > 768) {
+    showControls.value = true
+  }
+
   window.addEventListener('keydown', (event) => {
     if (event.code === 'Minus') {
       updateZoomDirection(-1)
