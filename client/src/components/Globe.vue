@@ -26,7 +26,7 @@ let animated = false
 let animateLastFrameTime = 0
 // Used by the SHIFT + LEFT/RIGHT keys and the ⟳/⟲ control buttons.
 let rotationAcceleration = 0.03
-let rotationDampening = 0.05
+let rotationDampening = 0.2
 let rotationSpeed = 0
 let rotationSpeedMax = 2
 // Used by the -/+ keys and the -/+ control buttons.
