@@ -22,6 +22,7 @@ import {
 import { initWebSocket, synchronise, requestUpdate } from "./utils/webSocket";
 import RoundButton from "./components/RoundButton.vue";
 import IncrementerButtons from "./components/IncrementerButtons.vue";
+import Info from "./components/Info.vue";
 
 let sphereDetail = 224
 let sphereFaceCount = 20 * (sphereDetail + 1) * (sphereDetail + 1)
@@ -166,7 +167,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="relative">
+  <div class="select-none touch-manipulation relative">
     <Globe
         :sphere-detail="sphereDetail"
         :selected-position="selectedPosition"
@@ -282,4 +283,5 @@ onMounted(() => {
       </div>
     </div>
   </div>
+  <Info />
 </template>
