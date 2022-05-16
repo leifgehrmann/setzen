@@ -167,7 +167,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="select-none touch-manipulation relative">
+  <div v-show="false" class="select-none touch-manipulation relative">
     <Globe
         :sphere-detail="sphereDetail"
         :selected-position="selectedPosition"
