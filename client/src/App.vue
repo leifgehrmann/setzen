@@ -22,7 +22,7 @@ import {
 import { initWebSocket, synchronise, requestUpdate } from "./utils/webSocket";
 import RoundButton from "./components/RoundButton.vue";
 import IncrementerButtons from "./components/IncrementerButtons.vue";
-import Info from "./components/Info.vue";
+import Info from "./components/info/Info.vue";
 
 let sphereDetail = 224
 let sphereFaceCount = 20 * (sphereDetail + 1) * (sphereDetail + 1)
