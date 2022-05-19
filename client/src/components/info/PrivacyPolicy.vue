@@ -43,7 +43,7 @@
 
 <style scoped>
 details {
-  @apply bg-purple-900;
+  @apply bg-purple-900/80;
 }
 
 details:first-of-type {

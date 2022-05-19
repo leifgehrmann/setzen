@@ -29,11 +29,13 @@ let sphereFaceCount = 20 * (sphereDetail + 1) * (sphereDetail + 1)
 let chunkSize = 16875 // See /server/sendmessage/app.js
 
 let showControls = ref(false)
+let showInfo = ref(true)
 let cameraMoveXDirection = ref(0)
 let cameraMoveYDirection = ref(0)
 let cameraZoomDirection = ref(0)
 let cameraRotateDirection = ref(0)
 let percentLoaded = ref(0)
+let loaded = ref(false)
 let connecting = ref(false)
 let connected = ref(false)
 let selectedPosition = ref(null as number|null)
@@ -100,13 +102,21 @@ function startWebSocket() {
     })
     connecting.value = false
     connected.value = true
+    loaded.value = true
   },() => {
     connected.value = false
   })
 }
 
-onMounted(() => {
+function connect () {
+  showInfo.value = false
+  if (connected.value) {
+    return
+  }
   startWebSocket()
+}
+
+onMounted(() => {
 
   if (window.innerWidth > 768) {
     showControls.value = true
@@ -167,8 +177,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-show="false" class="select-none touch-manipulation relative">
+  <div class="select-none touch-manipulation relative h-screen">
     <Globe
+        v-if="loaded"
         :sphere-detail="sphereDetail"
         :selected-position="selectedPosition"
         :move-x-direction="cameraMoveXDirection"
@@ -179,7 +190,7 @@ onMounted(() => {
     />
     <div
         class="
-          absolute
+          fixed
           flex justify-center inset-x-0 text-center pointer-events-none cursor-default
           transition-all ease-in-out duration-300
         "
@@ -197,16 +208,17 @@ onMounted(() => {
       />
     </div>
     <div
-        class="absolute top-0 left-0 p-4 select-none pointer-events-none"
+        class="fixed top-0 left-0 p-4 select-none pointer-events-none"
     >
       <RoundButton
           @click="showControls = !showControls"
+          :disabled="showInfo"
           :img-src="showControls ? closeImage : menuImage"
           :label="showControls ? 'Hide menu' : 'Show menu'"
       />
     </div>
     <div
-        class="absolute top-0 w-full overflow-hidden select-none pointer-events-none"
+        class="fixed top-0 w-full overflow-hidden select-none pointer-events-none"
         style="height: calc(4rem + env(safe-area-inset-top))"
     >
       <div
@@ -225,7 +237,7 @@ onMounted(() => {
         <IncrementerButtons
             left-label="Rotate anti-clockwise"
             right-label="Rotate clockwise"
-            :disabled="!showControls"
+            :disabled="!showControls || showInfo"
             :left-img-src="rotateAntiClockwiseImage"
             :right-img-src="rotateClockwiseImage"
             @updateDirection="updateRotateDirection"
@@ -233,28 +245,28 @@ onMounted(() => {
         <IncrementerButtons
             left-label="Zoom out"
             right-label="Zoom in"
-            :disabled="!showControls"
+            :disabled="!showControls || showInfo"
             :left-img-src="zoomOutImage"
             :right-img-src="zoomInImage"
             @updateDirection="updateZoomDirection"
         />
         <RoundButton
             label="Information"
-            :disabled="!showControls"
+            :disabled="!showControls || showInfo"
             :img-src="infoImage"
-            @click="showControls = !showControls"
+            @click="showInfo = !showInfo"
         />
       </div>
     </div>
     <div
-        class="absolute bottom-0 p-4 select-none pointer-events-none overflow-hidden"
+        class="fixed bottom-0 p-4 select-none pointer-events-none overflow-hidden"
         style="height: calc(12rem + env(safe-area-inset-bottom))"
     >
       <RoundButton
           @click="selectPosition(null)"
           label="Close color selection"
           class="transition-all ease-in-out duration-300 transform"
-          :disabled="selectedPosition === null"
+          :disabled="selectedPosition === null || showInfo"
           :img-src="closeImage"
           :style="{
             'transform': selectedPosition === null ? 'translate(0, calc(12rem + env(safe-area-inset-bottom)))' : 'translate(0, 0)',
@@ -262,7 +274,7 @@ onMounted(() => {
       />
     </div>
     <div
-        class="absolute bottom-0 w-full overflow-hidden pointer-events-none"
+        class="fixed bottom-0 w-full overflow-hidden pointer-events-none"
         style="height: calc(8rem + env(safe-area-inset-bottom))"
     >
       <div
@@ -277,11 +289,15 @@ onMounted(() => {
           }"
       >
         <ColorSelector
-            :disabled="selectedPosition === null"
+            :disabled="selectedPosition === null || showInfo"
             @select-color-id="updateColorId"
         />
       </div>
     </div>
   </div>
-  <Info />
+  <Info
+      v-if="showInfo"
+      :loaded="loaded"
+      @connect="connect"
+  />
 </template>
