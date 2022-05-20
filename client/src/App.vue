@@ -177,7 +177,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="select-none touch-manipulation relative h-screen">
+  <div v-show="!showInfo" class="select-none touch-manipulation relative">
     <Globe
         v-if="loaded"
         :sphere-detail="sphereDetail"
@@ -190,7 +190,7 @@ onMounted(() => {
     />
     <div
         class="
-          fixed
+          absolute
           flex justify-center inset-x-0 text-center pointer-events-none cursor-default
           transition-all ease-in-out duration-300
         "
@@ -208,7 +208,7 @@ onMounted(() => {
       />
     </div>
     <div
-        class="fixed top-0 left-0 p-4 select-none pointer-events-none"
+        class="absolute top-0 left-0 p-4 select-none pointer-events-none"
     >
       <RoundButton
           @click="showControls = !showControls"
@@ -218,7 +218,7 @@ onMounted(() => {
       />
     </div>
     <div
-        class="fixed top-0 w-full overflow-hidden select-none pointer-events-none"
+        class="absolute top-0 w-full overflow-hidden select-none pointer-events-none"
         style="height: calc(4rem + env(safe-area-inset-top))"
     >
       <div
@@ -259,7 +259,7 @@ onMounted(() => {
       </div>
     </div>
     <div
-        class="fixed bottom-0 p-4 select-none pointer-events-none overflow-hidden"
+        class="absolute bottom-0 p-4 select-none pointer-events-none overflow-hidden"
         style="height: calc(12rem + env(safe-area-inset-bottom))"
     >
       <RoundButton
@@ -274,7 +274,7 @@ onMounted(() => {
       />
     </div>
     <div
-        class="fixed bottom-0 w-full overflow-hidden pointer-events-none"
+        class="absolute bottom-0 w-full overflow-hidden pointer-events-none"
         style="height: calc(8rem + env(safe-area-inset-bottom))"
     >
       <div

@@ -808,5 +808,5 @@ onMounted(() => {
 </script>
 
 <template>
-  <div id="container" class="cursor-pointer fixed overflow-hidden" tabindex="-1"></div>
+  <div id="container" class="cursor-pointer" tabindex="-1"></div>
 </template>
