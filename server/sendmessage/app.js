@@ -351,6 +351,9 @@ exports.handler = async event => {
 
   const postData = JSON.parse(event.body).data;
 
+  // Used for analytics.
+  console.info(`Received request type: ${postData.type} using connection id: ${connectionId}.`)
+
   switch (postData.type) {
     case 'readChunk':
       if (!validChunkId(postData.chunkId)) {
@@ -440,6 +443,11 @@ exports.handler = async event => {
       if (!validColorId(postData.colorId)) {
         return { statusCode: 400, body: 'Invalid colorId.' };
       }
+
+      // Some IP addresses may need to be banned if they break the rules.
+      // We log the IP address in case we need to resort to that.
+      console.info(`Received update request from IP address: ${event.requestContext.identity.sourceIp} using connection id: ${connectionId}.`)
+
       const updateData = {
         position: postData.position,
         colorId: postData.colorId,
