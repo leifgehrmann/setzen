@@ -16,9 +16,9 @@ export function initWebSocket(
   openCallback: Function,
   closeCallback: Function
 ) {
-  // `webSocketHost` is defined by vite.config.ts.
+  // `webSocketUrl` is defined by vite.config.ts.
   // @ts-ignore
-  webSocket = new WebSocket(webSocketHost)
+  webSocket = new WebSocket(webSocketUrl)
 
   webSocket.addEventListener('open', () => {
     openCallback()

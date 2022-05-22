@@ -6,17 +6,24 @@
   </p>
   <p>
     If there are reports of NSFW content, personal information, hate speech,
-    harassment, or copyright infringement, this website will be disabled
-    indefinitely until the content is removed.
+    harassment, or copyright infringement, the administrator will either:
+    block the offender's IP address and/or disabled this site indefinitely
+    until the content is removed.
   </p>
   <p>
     Reports can be submitted on the
-    <a href="https://github.com/leifgehrmann/setzen/issues">project’s Issues page</a>
-    or by contacting the administrator.
+    <a :href="issuesUrl">project’s issues page</a>
+    or by contacting the <a :href="`mailto:${email}`">administrator via e-mail</a>.
   </p>
 </template>
 
 <script setup lang="ts">
+import {ref} from "vue";
+
+// `contactIssuesUrl` and `contactEmail` is defined by vite.config.ts.
+// @ts-ignore
+const issuesUrl = ref(contactIssuesUrl)
+const email = ref(contactEmail)
 </script>
 
 <style scoped>

@@ -16,14 +16,14 @@
   <div class="p-5 bg-neutral-900 rounded-b-xl">
     <div v-if="control === 'touch'">
       <ul>
-        <li>Tap to focus on a trixel to select a color.</li>
+        <li>Tap to select a trixel to set a color.</li>
         <li>Tap and drag to pan the globe.</li>
         <li>Pinch to zoom and rotate the camera.</li>
       </ul>
     </div>
     <div v-if="control === 'mouse'">
       <ul>
-        <li>Click to focus on a trixel to select a color.</li>
+        <li>Click to select a trixel to set a color.</li>
         <li>Click and drag to pan the globe.</li>
         <li>Scroll-wheel to zoom.</li>
       </ul>
@@ -34,11 +34,11 @@
         <li><code>↑</code> / <code>↓</code> pans the globe up/down.</li>
         <li><code>-</code> / <code>+</code> zooms the camera.</li>
         <li><code>⇧←</code> / <code>⇧→</code> rotates the camera.</li>
-        <li><code>.</code> focuses on the trixel in the center of the screen.</li>
-        <li><code>␛</code> dismisses the color selector.</li>
+        <li><code>.</code> selects the trixel in the center of the screen.</li>
+        <li><code>␛</code> deselects the selection.</li>
       </ul>
 
-      <p>Once a trixel is focused, the following keys can be used to change the color.</p>
+      <p>Once a trixel is selected, the following keys can be used to change the color.</p>
 
       <img src="../../assets/keyboard.png" alt="A keyboard layout with different keys displaying keys colored according to ">
     </div>
