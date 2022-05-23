@@ -13,32 +13,31 @@
       <span>Keyboard</span>
     </label>
   </div>
-  <div class="p-5 bg-neutral-900 rounded-b-xl">
+  <div class="p-5 bg-blue-900 rounded-b-xl">
     <div v-if="control === 'touch'">
       <ul>
-        <li>Tap to select a trixel to set a color.</li>
+        <li>Tap to select a tile to set a color.</li>
         <li>Tap and drag to pan the globe.</li>
         <li>Pinch to zoom and rotate the camera.</li>
       </ul>
     </div>
     <div v-if="control === 'mouse'">
       <ul>
-        <li>Click to select a trixel to set a color.</li>
+        <li>Click to select a tile to set a color.</li>
         <li>Click and drag to pan the globe.</li>
         <li>Scroll-wheel to zoom.</li>
       </ul>
     </div>
     <div v-if="control === 'keyboard'">
       <ul>
-        <li><code>←</code> / <code>→</code> pans the globe left/right.</li>
-        <li><code>↑</code> / <code>↓</code> pans the globe up/down.</li>
-        <li><code>-</code> / <code>+</code> zooms the camera.</li>
-        <li><code>⇧←</code> / <code>⇧→</code> rotates the camera.</li>
-        <li><code>.</code> selects the trixel in the center of the screen.</li>
-        <li><code>␛</code> deselects the selection.</li>
+        <li><code>←</code>, <code>→</code>, <code>↑</code>, <code>↓</code> pans the globe.</li>
+        <li><code>-</code>, <code>+</code> zooms the camera.</li>
+        <li><code>⇧</code><code>←</code>, <code>⇧</code><code>→</code> rotates the camera.</li>
+        <li><code>.</code> selects the tile in the center of the screen.</li>
+        <li><code><span class="text-xs">ESC</span></code> de-selects the tile.</li>
       </ul>
 
-      <p>Once a trixel is selected, the following keys can be used to change the color.</p>
+      <p>Once a tile is selected, the following keys can be used to change the color.</p>
 
       <img src="../../assets/keyboard.png" alt="A keyboard layout with different keys displaying keys colored according to ">
     </div>
@@ -53,16 +52,20 @@ const control = ref('touch')
 
 <style scoped>
 code {
-  @apply bg-neutral-600;
-  @apply rounded;
-  @apply px-1;
-  @apply py-0.5;
+  @apply bg-blue-300;
+  @apply text-black;
+  @apply rounded-sm;
+  @apply mx-0.5;
+  @apply px-1.5;
+  @apply pb-0.5;
+  @apply my-0.5;
   @apply text-sm;
+  box-shadow: inset 0 -2px 0 1px rgba(59,130,246,1), 0 1px 0px 1px rgba(0,0,0,0.5);
 }
 
 .info-control-input {
   @apply flex-grow;
-  @apply bg-neutral-900/30;
+  @apply bg-blue-900/30;
   @apply px-3;
   @apply py-1;
   @apply rounded-t-xl;
@@ -75,6 +78,6 @@ code {
 }
 
 .info-control-input-selected {
-  @apply bg-neutral-900;
+  @apply bg-blue-900;
 }
 </style>

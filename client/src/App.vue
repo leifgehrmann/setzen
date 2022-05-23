@@ -23,8 +23,10 @@ import { initWebSocket, synchronise, requestUpdate } from "./utils/webSocket";
 import RoundButton from "./components/RoundButton.vue";
 import IncrementerButtons from "./components/IncrementerButtons.vue";
 import Info from "./components/info/Info.vue";
+import {hasReviewedPolicy, setReviewedPolicyDate} from "./utils/policyCheck";
 
 let sphereDetail = 224
+let initialisedGlobe = false
 let sphereFaceCount = 20 * (sphereDetail + 1) * (sphereDetail + 1)
 let chunkSize = 16875 // See /server/sendmessage/app.js
 
@@ -36,15 +38,8 @@ let cameraZoomDirection = ref(0)
 let cameraRotateDirection = ref(0)
 let percentLoaded = ref(0)
 let loaded = ref(false)
-let connecting = ref(false)
-let connected = ref(false)
+let connectionStatus = ref('disconnected' as 'disconnected'|'connecting'|'connected')
 let selectedPosition = ref(null as number|null)
-
-initState(sphereFaceCount, chunkSize)
-loadFromLocalStorage()
-addUpdateBulkListener(() => { persistToLocalStorage() })
-addUpdateListener(() => { persistToLocalStorage() })
-triggerBulkUpdate()
 
 function updateMoveXDirection (newDirection: number) {
   cameraMoveXDirection.value = newDirection
@@ -79,14 +74,14 @@ function updateColorId(colorId: number) {
     console.error('Cannot send update while not fully loaded.')
     return
   }
-  if (!connected.value) {
+  if (connectionStatus.value !== 'connected') {
     console.error('Cannot send update while disconnected.')
     return
   }
   console.log('updateColorId', position, colorId)
   requestUpdate(position, colorId)
   setTimeout(() => {
-    if (!connected.value) {
+    if (connectionStatus.value !== 'connected') {
       console.error('Cannot send update while disconnected.')
       return
     }
@@ -94,35 +89,20 @@ function updateColorId(colorId: number) {
   }, 100)
 }
 
-function startWebSocket() {
-  connecting.value = true
-  initWebSocket(() => {
-    synchronise((newPercentLoaded) => {
-      percentLoaded.value = newPercentLoaded
-    })
-    connecting.value = false
-    connected.value = true
-    loaded.value = true
-  },() => {
-    connected.value = false
-  })
-}
-
-function connect () {
-  showInfo.value = false
-  if (connected.value) {
+function initGlobe () {
+  if (initialisedGlobe) {
     return
   }
-  startWebSocket()
-}
-
-onMounted(() => {
-
-  if (window.innerWidth > 768) {
-    showControls.value = true
-  }
+  initState(sphereFaceCount, chunkSize)
+  loadFromLocalStorage()
+  addUpdateBulkListener(() => { persistToLocalStorage() })
+  addUpdateListener(() => { persistToLocalStorage() })
+  triggerBulkUpdate()
 
   window.addEventListener('keydown', (event) => {
+    if (showInfo.value) {
+      return
+    }
     if (event.code === 'Minus') {
       updateZoomDirection(-1)
     } else if (event.code === 'Equal') {
@@ -143,6 +123,9 @@ onMounted(() => {
   })
 
   window.addEventListener('keyup', (event) => {
+    if (showInfo.value) {
+      return
+    }
     if (event.code === 'Minus' || event.code === 'Equal') {
       updateZoomDirection(0)
     } else if (event.code === 'ArrowLeft' || event.code === 'ArrowRight') {
@@ -154,6 +137,9 @@ onMounted(() => {
   })
 
   window.addEventListener('keypress', (event) => {
+    if (showInfo.value) {
+      return
+    }
     if (event.code === 'Escape') {
       selectPosition(null)
     } else if (event.code === 'Period') {
@@ -172,6 +158,42 @@ onMounted(() => {
       }
     }
   })
+
+  initialisedGlobe = true
+}
+
+function startWebSocket() {
+  connectionStatus.value = 'connecting'
+  initWebSocket(() => {
+    synchronise((newPercentLoaded) => {
+      percentLoaded.value = newPercentLoaded
+    })
+    connectionStatus.value = 'connected'
+    loaded.value = true
+  },() => {
+    connectionStatus.value = 'disconnected'
+  })
+}
+
+function connect () {
+  setReviewedPolicyDate(new Date())
+  initGlobe()
+  showInfo.value = false
+  if (connectionStatus.value !== 'disconnected') {
+    return
+  }
+  startWebSocket()
+}
+
+onMounted(() => {
+
+  if (window.innerWidth > 768) {
+    showControls.value = true
+  }
+
+  if (hasReviewedPolicy()) {
+    connect()
+  }
 })
 
 </script>
@@ -195,14 +217,14 @@ onMounted(() => {
           transition-all ease-in-out duration-300
         "
         :class="{
-          'top-16 sm:top-2': !showControls && (!connected && !connecting),
-          'top-3': !showControls && !(!connected && !connecting),
+          'top-16 sm:top-2': !showControls && (connectionStatus === 'disconnected'),
+          'top-3': !showControls && !(connectionStatus === 'disconnected'),
           'top-16': showControls,
         }"
     >
       <WebSocketState
-          :connecting="connecting"
-          :connected="connected"
+          :connecting="connectionStatus === 'connecting'"
+          :connected="connectionStatus === 'connected'"
           :percentLoaded="percentLoaded"
           @reconnect="startWebSocket"
       />

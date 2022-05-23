@@ -17,29 +17,31 @@
       <div class="px-5 bg-neutral-800/50">
         <p>Welcome! 𝐒𝐄𝐓𝐙𝐄𝐍 is a multiplayer collaborative canvas where you place tiles on a globe consisting of a million 'trixels'. It is a remix of Reddit’s <a class="underline text-blue-300" href="https://en.wikipedia.org/wiki/R/place">April Fools experiment r/place</a>.</p>
 
-        <p><strong>How to play:</strong> No registration is needed, simply connect! Once the globe has loaded, touch any part of the surface to focus on a tile. A color selector will appear which allows you to change the color.</p>
-        <p><a href="#terms-of-use">Terms of Use</a> · <a href="#privacy-policy">Privacy Policy</a></p>
-        <div class="py-1"></div>
-        <button
-            class="mx-auto px-4 py-1 bg-green-600/70 cursor-pointer pointer-events-auto rounded"
-            @click="emit('connect')"
-        >
-          <span v-if="loaded">Re-join</span>
-          <span v-else>Connect</span>
-        </button>
-        <div class="py-3"></div>
+        <p><strong>How to play:</strong> No registration is needed, simply connect! Once the globe has loaded, touch any part of the surface to focus on a tile. A color selector will appear which allows you to change the color of the tile.</p>
+        <div class="py-2"></div>
+        <div class="w-full text-center">
+          <p><a href="#terms-of-use">Terms of Use</a> · <a href="#privacy-policy">Privacy Policy</a> <span class="whitespace-nowrap">({{policyDateString}})</span></p>
+          <div class="py-1"></div>
+          <button
+              class="mx-auto text-2xl px-5 py-1 bg-green-600/70 hover:bg-green-500/70 cursor-pointer pointer-events-auto rounded"
+              @click="emit('connect')"
+          >
+            Connect
+          </button>
+        </div>
+        <div class="py-5"></div>
       </div>
-      <div class="px-5 py-5 bg-green-800/50">
-        <h2 class="text-green-300">Controls</h2>
+      <div class="px-5 py-5 bg-blue-800/50">
+        <h2 class="text-blue-300">Controls</h2>
         <Controls />
       </div>
       <div class="px-5 py-5 bg-red-800/50">
         <h2 class="text-red-300">Rules</h2>
         <Rules />
       </div>
-      <div class="px-5 py-5 bg-blue-800/50">
+      <div class="px-5 py-5 bg-green-800/50">
 
-        <h2 class="text-blue-300">FAQ</h2>
+        <h2 class="text-green-300">FAQ</h2>
         <Faq />
 
       </div>
@@ -61,10 +63,14 @@ import PrivacyPolicy from "./PrivacyPolicy.vue";
 import Controls from "./Controls.vue";
 import Rules from "./Rules.vue";
 import Faq from "./Faq.vue";
+import {ref} from "vue";
+import {getPolicyDateString} from "../../utils/policyCheck";
 
 const props = defineProps({
   loaded: Boolean
 })
+
+const policyDateString = ref(getPolicyDateString())
 
 const emit = defineEmits(['connect'])
 </script>
@@ -78,6 +84,7 @@ p {
 a {
   @apply underline;
   @apply text-blue-300;
+  @apply hover:text-blue-200;
 }
 
 h2 {

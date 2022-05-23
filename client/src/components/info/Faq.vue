@@ -1,12 +1,12 @@
 <template>
-  <p class="font-bold">Q. Why a sphere, and why trixels?</p>
+  <p class="font-bold">Q. Why a sphere, and why 'trixels'?</p>
   <p>
     During the 2022 r/place experiment some groups were drawing small
     pixel-art maps of countries. At one point during the four day
     experiment, 19 country borders of Europe coexisted on the map.
     Inspired by this aspect of the experiment, 𝐒𝐄𝐓𝐙𝐄𝐍 is a remix
     of r/place, asking what would happen if the canvas was a spheroid rather
-    than a squre canvas. After all, the real world is a spheroid!
+    than a rectangular canvas. After all, the real world is a spheroid!
   </p>
   <p>
     The globe consists of triangles because the best tessellation that has

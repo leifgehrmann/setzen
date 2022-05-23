@@ -1,5 +1,5 @@
 <template>
-  <p class="text-sm">Effective 2022-05-18.</p>
+  <p class="text-sm">Effective {{policyDateString}}.</p>
   <h3>Data Controllers</h3>
   <p>This application has three controllers who control data collected from you by using this website.</p>
   <ul>
@@ -42,10 +42,13 @@
 
 <script setup lang="ts">
 import {ref} from "vue";
+import {getPolicyDateString} from "../../utils/policyCheck";
 
 // `webAppHost` is defined by vite.config.ts.
 // @ts-ignore
 const webAppHostCapitalized = ref(webAppHost.charAt(0).toUpperCase() + webAppHost.slice(1))
+
+const policyDateString = ref(getPolicyDateString())
 </script>
 
 <style scoped>
