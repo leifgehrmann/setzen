@@ -623,7 +623,7 @@ function animateControls () {
     zoomCameraToDistance(camera, interpolatedZoom)
   }
 
-  if (animateToSelectedDuration >= 1) {
+  if (animateToSelectedDuration >= 1 || moveYSpeed !== 0 || moveXSpeed !== 0) {
     clearAnimateToSelected()
   }
 
