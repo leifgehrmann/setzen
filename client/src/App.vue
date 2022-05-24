@@ -322,4 +322,15 @@ onMounted(() => {
       :loaded="loaded"
       @connect="connect"
   />
+  <div
+      class="fixed top-0 right-0 p-4 select-none pointer-events-none"
+      v-if="showInfo && initialisedGlobe"
+  >
+    <RoundButton
+        @click="showInfo = !showInfo"
+        :disabled="!showInfo"
+        :img-src="closeImage"
+        label="Dismiss info"
+    />
+  </div>
 </template>
