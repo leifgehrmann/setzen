@@ -26,9 +26,14 @@ jobs:
         npm ci
         npm run build
         touch ./dist/.nojekyll
-        echo "setzen.fun" >> ./dist/CNAME
+        echo $SETZEN_WEBAPP_HOST >> ./dist/CNAME
       env:
-        SETZEN_WEBSOCKET_HOST: ${{secrets.SETZEN_WEBSOCKET_HOST}}
+        SETZEN_WEBSOCKET_URL: ${{secrets.SETZEN_WEBSOCKET_URL}}
+        SETZEN_WEBAPP_HOST: ${{secrets.SETZEN_WEBAPP_HOST}}
+        SETZEN_CONTACT_EMAIL: ${{secrets.SETZEN_CONTACT_EMAIL}}
+        SETZEN_CONTACT_URL: ${{secrets.SETZEN_CONTACT_URL}}
+        SETZEN_CONTACT_ISSUES_URL: ${{secrets.SETZEN_CONTACT_ISSUES_URL}}
+        SETZEN_CONTACT_PROJECT_URL: ${{secrets.SETZEN_CONTACT_PROJECT_URL}}
 
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3

@@ -22,26 +22,24 @@ import {
 import { initWebSocket, synchronise, requestUpdate } from "./utils/webSocket";
 import RoundButton from "./components/RoundButton.vue";
 import IncrementerButtons from "./components/IncrementerButtons.vue";
+import Info from "./components/info/Info.vue";
+import {hasReviewedPolicy, setReviewedPolicyDate} from "./utils/policyCheck";
 
 let sphereDetail = 224
 let sphereFaceCount = 20 * (sphereDetail + 1) * (sphereDetail + 1)
 let chunkSize = 16875 // See /server/sendmessage/app.js
 
+let initialisedGlobe = ref(false)
 let showControls = ref(false)
+let showInfo = ref(true)
 let cameraMoveXDirection = ref(0)
 let cameraMoveYDirection = ref(0)
 let cameraZoomDirection = ref(0)
 let cameraRotateDirection = ref(0)
 let percentLoaded = ref(0)
-let connecting = ref(false)
-let connected = ref(false)
+let loaded = ref(false)
+let connectionStatus = ref('disconnected' as 'disconnected'|'connecting'|'connected')
 let selectedPosition = ref(null as number|null)
-
-initState(sphereFaceCount, chunkSize)
-loadFromLocalStorage()
-addUpdateBulkListener(() => { persistToLocalStorage() })
-addUpdateListener(() => { persistToLocalStorage() })
-triggerBulkUpdate()
 
 function updateMoveXDirection (newDirection: number) {
   cameraMoveXDirection.value = newDirection
@@ -76,14 +74,14 @@ function updateColorId(colorId: number) {
     console.error('Cannot send update while not fully loaded.')
     return
   }
-  if (!connected.value) {
+  if (connectionStatus.value !== 'connected') {
     console.error('Cannot send update while disconnected.')
     return
   }
   console.log('updateColorId', position, colorId)
   requestUpdate(position, colorId)
   setTimeout(() => {
-    if (!connected.value) {
+    if (connectionStatus.value !== 'connected') {
       console.error('Cannot send update while disconnected.')
       return
     }
@@ -91,27 +89,20 @@ function updateColorId(colorId: number) {
   }, 100)
 }
 
-function startWebSocket() {
-  connecting.value = true
-  initWebSocket(() => {
-    synchronise((newPercentLoaded) => {
-      percentLoaded.value = newPercentLoaded
-    })
-    connecting.value = false
-    connected.value = true
-  },() => {
-    connected.value = false
-  })
-}
-
-onMounted(() => {
-  startWebSocket()
-
-  if (window.innerWidth > 768) {
-    showControls.value = true
+function initGlobe () {
+  if (initialisedGlobe.value) {
+    return
   }
+  initState(sphereFaceCount, chunkSize)
+  loadFromLocalStorage()
+  addUpdateBulkListener(() => { persistToLocalStorage() })
+  addUpdateListener(() => { persistToLocalStorage() })
+  triggerBulkUpdate()
 
   window.addEventListener('keydown', (event) => {
+    if (showInfo.value) {
+      return
+    }
     if (event.code === 'Minus') {
       updateZoomDirection(-1)
     } else if (event.code === 'Equal') {
@@ -132,6 +123,9 @@ onMounted(() => {
   })
 
   window.addEventListener('keyup', (event) => {
+    if (showInfo.value) {
+      return
+    }
     if (event.code === 'Minus' || event.code === 'Equal') {
       updateZoomDirection(0)
     } else if (event.code === 'ArrowLeft' || event.code === 'ArrowRight') {
@@ -143,6 +137,9 @@ onMounted(() => {
   })
 
   window.addEventListener('keypress', (event) => {
+    if (showInfo.value) {
+      return
+    }
     if (event.code === 'Escape') {
       selectPosition(null)
     } else if (event.code === 'Period') {
@@ -161,13 +158,50 @@ onMounted(() => {
       }
     }
   })
+
+  initialisedGlobe.value = true
+}
+
+function startWebSocket() {
+  connectionStatus.value = 'connecting'
+  initWebSocket(() => {
+    synchronise((newPercentLoaded) => {
+      percentLoaded.value = newPercentLoaded
+    })
+    connectionStatus.value = 'connected'
+    loaded.value = true
+  },() => {
+    connectionStatus.value = 'disconnected'
+  })
+}
+
+function connect () {
+  setReviewedPolicyDate(new Date())
+  initGlobe()
+  showInfo.value = false
+  if (connectionStatus.value !== 'disconnected') {
+    return
+  }
+  startWebSocket()
+}
+
+onMounted(() => {
+
+  if (window.innerWidth > 768) {
+    showControls.value = true
+  }
+
+  if (hasReviewedPolicy()) {
+    connect()
+  }
 })
 
 </script>
 
 <template>
-  <div class="relative">
+  <div v-show="!showInfo" class="select-none touch-manipulation relative">
     <Globe
+        v-if="loaded"
         :sphere-detail="sphereDetail"
         :selected-position="selectedPosition"
         :move-x-direction="cameraMoveXDirection"
@@ -183,14 +217,14 @@ onMounted(() => {
           transition-all ease-in-out duration-300
         "
         :class="{
-          'top-16 sm:top-2': !showControls && (!connected && !connecting),
-          'top-3': !showControls && !(!connected && !connecting),
+          'top-16 sm:top-2': !showControls && (connectionStatus === 'disconnected'),
+          'top-3': !showControls && !(connectionStatus === 'disconnected'),
           'top-16': showControls,
         }"
     >
       <WebSocketState
-          :connecting="connecting"
-          :connected="connected"
+          :connecting="connectionStatus === 'connecting'"
+          :connected="connectionStatus === 'connected'"
           :percentLoaded="percentLoaded"
           @reconnect="startWebSocket"
       />
@@ -200,6 +234,7 @@ onMounted(() => {
     >
       <RoundButton
           @click="showControls = !showControls"
+          :disabled="showInfo"
           :img-src="showControls ? closeImage : menuImage"
           :label="showControls ? 'Hide menu' : 'Show menu'"
       />
@@ -224,7 +259,7 @@ onMounted(() => {
         <IncrementerButtons
             left-label="Rotate anti-clockwise"
             right-label="Rotate clockwise"
-            :disabled="!showControls"
+            :disabled="!showControls || showInfo"
             :left-img-src="rotateAntiClockwiseImage"
             :right-img-src="rotateClockwiseImage"
             @updateDirection="updateRotateDirection"
@@ -232,16 +267,16 @@ onMounted(() => {
         <IncrementerButtons
             left-label="Zoom out"
             right-label="Zoom in"
-            :disabled="!showControls"
+            :disabled="!showControls || showInfo"
             :left-img-src="zoomOutImage"
             :right-img-src="zoomInImage"
             @updateDirection="updateZoomDirection"
         />
         <RoundButton
             label="Information"
-            :disabled="!showControls"
+            :disabled="!showControls || showInfo"
             :img-src="infoImage"
-            @click="showControls = !showControls"
+            @click="showInfo = !showInfo"
         />
       </div>
     </div>
@@ -253,7 +288,7 @@ onMounted(() => {
           @click="selectPosition(null)"
           label="Close color selection"
           class="transition-all ease-in-out duration-300 transform"
-          :disabled="selectedPosition === null"
+          :disabled="selectedPosition === null || showInfo"
           :img-src="closeImage"
           :style="{
             'transform': selectedPosition === null ? 'translate(0, calc(12rem + env(safe-area-inset-bottom)))' : 'translate(0, 0)',
@@ -276,10 +311,26 @@ onMounted(() => {
           }"
       >
         <ColorSelector
-            :disabled="selectedPosition === null"
+            :disabled="selectedPosition === null || showInfo"
             @select-color-id="updateColorId"
         />
       </div>
     </div>
+  </div>
+  <Info
+      v-if="showInfo"
+      :loaded="loaded"
+      @connect="connect"
+  />
+  <div
+      class="fixed top-0 right-0 p-4 select-none pointer-events-none"
+      v-if="showInfo && initialisedGlobe"
+  >
+    <RoundButton
+        @click="showInfo = !showInfo"
+        :disabled="!showInfo"
+        :img-src="closeImage"
+        label="Dismiss info"
+    />
   </div>
 </template>

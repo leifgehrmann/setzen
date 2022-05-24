@@ -19,7 +19,7 @@ const TOTAL_COLOR_IDS = 32;
 // Base64 encoding 16875 bytes results in 22443 Bytes.
 const CHUNK_SIZE = 16875; // 1012500 / 20 / 3
 const CHUNK_LOCK_EXPIRATION = 60 * 1000; // 60 seconds
-const UPDATE_CHUNK_QUEUE_SIZE_THRESHOLD = 3;
+const UPDATE_CHUNK_QUEUE_SIZE_THRESHOLD = 20;
 
 /**
  * @param {string} connectionId
@@ -340,6 +340,11 @@ const validColorId = (colorId) => {
     Number.isInteger(colorId)
 }
 
+function pseudorandomColorId (seed) {
+  const x = Math.sin(seed) * 10000;
+  return Math.floor((x - Math.floor(x)) * TOTAL_COLOR_IDS);
+}
+
 exports.handler = async event => {
   const connectionId = event.requestContext.connectionId
   const domainName = event.requestContext.domainName
@@ -370,7 +375,7 @@ exports.handler = async event => {
         if (chunkItem === undefined) {
           const colorIds = new Uint8Array(CHUNK_SIZE)
           for (let i = 0; i<CHUNK_SIZE; i++) {
-            colorIds[i] = Math.floor(Math.random() * TOTAL_COLOR_IDS)
+            colorIds[i] = pseudorandomColorId(postData.chunkId * CHUNK_SIZE + i)
           }
           const colorIdsBase64 = Buffer.from(colorIds.buffer).toString('base64')
           chunkItem = {
