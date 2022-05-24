@@ -19,7 +19,7 @@ const TOTAL_COLOR_IDS = 32;
 // Base64 encoding 16875 bytes results in 22443 Bytes.
 const CHUNK_SIZE = 16875; // 1012500 / 20 / 3
 const CHUNK_LOCK_EXPIRATION = 60 * 1000; // 60 seconds
-const UPDATE_CHUNK_QUEUE_SIZE_THRESHOLD = 3;
+const UPDATE_CHUNK_QUEUE_SIZE_THRESHOLD = 20;
 
 /**
  * @param {string} connectionId
