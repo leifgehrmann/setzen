@@ -1,4 +1,5 @@
 import {chunkTimes, getTotalChunks, hasLoadedFromLocalStorage, triggerBulkUpdate, update, updateChunk} from "./state";
+import {getWebSocketUrl} from "./definedVars";
 
 let webSocket: WebSocket|null
 let syncAttempts = 0
@@ -16,9 +17,7 @@ export function initWebSocket(
   openCallback: Function,
   closeCallback: Function
 ) {
-  // `webSocketUrl` is defined by vite.config.ts.
-  // @ts-ignore
-  webSocket = new WebSocket(webSocketUrl)
+  webSocket = new WebSocket(getWebSocketUrl())
 
   webSocket.addEventListener('open', () => {
     openCallback()

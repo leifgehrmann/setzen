@@ -19,11 +19,10 @@
 
 <script setup lang="ts">
 import {ref} from "vue";
+import {getContactIssuesUrl, getContactEmail} from "../../utils/definedVars";
 
-// `contactIssuesUrl` and `contactEmail` is defined by vite.config.ts.
-// @ts-ignore
-const issuesUrl = ref(contactIssuesUrl)
-const email = ref(contactEmail)
+const issuesUrl = ref(getContactIssuesUrl())
+const email = ref(getContactEmail())
 </script>
 
 <style scoped>

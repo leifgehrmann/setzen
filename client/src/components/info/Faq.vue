@@ -24,10 +24,9 @@
 
 <script setup lang="ts">
 import {ref} from "vue";
+import {getContactProjectUrl} from "../../utils/definedVars";
 
-// `contactProjectUrl` is defined by vite.config.ts.
-// @ts-ignore
-const projectUrl = ref(contactProjectUrl)
+const projectUrl = ref(getContactProjectUrl())
 </script>
 
 <style scoped>

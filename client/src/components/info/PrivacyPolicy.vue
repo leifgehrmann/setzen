@@ -43,11 +43,9 @@
 <script setup lang="ts">
 import {ref} from "vue";
 import {getPolicyDateString} from "../../utils/policyCheck";
+import {getWebAppHost} from "../../utils/definedVars";
 
-// `webAppHost` is defined by vite.config.ts.
-// @ts-ignore
-const webAppHostCapitalized = ref(webAppHost.charAt(0).toUpperCase() + webAppHost.slice(1))
-
+const webAppHostCapitalized = ref(getWebAppHost().charAt(0).toUpperCase() + getWebAppHost().slice(1))
 const policyDateString = ref(getPolicyDateString())
 </script>
 
