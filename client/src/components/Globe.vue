@@ -8,6 +8,7 @@ import {rotateCameraAlongAxis, rotateCameraAlongEyeAxis, zoomCameraToDistance} f
 import {getSphereShader} from "../utils/sphereMaterial";
 import {createSelectedMarker} from "../utils/selectedMarker";
 import {getTouchById} from "../utils/touchUtils";
+import {colors} from "../utils/colors";
 
 let renderer: THREE.Renderer
 let scene: THREE.Scene
@@ -748,6 +749,13 @@ onMounted(() => {
 
     console.log(geometry.attributes.position.count / 3)
     vertexColorIds = new Int32Array(geometry.attributes.position.count);
+
+    // To avoid the world appearing a certain color, default the map color to black.
+    const colorIdBlack = Math.max(0, colors.indexOf('#000000'))
+    for (let i = 0; i < geometry.attributes.position.count; i++) {
+      vertexColorIds[i] = colorIdBlack
+    }
+
     geometry.setAttribute('vertexColorId', new THREE.BufferAttribute(vertexColorIds, 1));
 
     sphere = new THREE.Mesh(geometry, getSphereShader());
