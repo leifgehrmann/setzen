@@ -340,6 +340,11 @@ const validColorId = (colorId) => {
     Number.isInteger(colorId)
 }
 
+function pseudorandomColorId (seed) {
+  const x = Math.sin(seed) * 10000;
+  return Math.floor((x - Math.floor(x)) * TOTAL_COLOR_IDS);
+}
+
 exports.handler = async event => {
   const connectionId = event.requestContext.connectionId
   const domainName = event.requestContext.domainName
@@ -367,7 +372,7 @@ exports.handler = async event => {
         if (chunkItem === undefined) {
           const colorIds = new Uint8Array(CHUNK_SIZE)
           for (let i = 0; i<CHUNK_SIZE; i++) {
-            colorIds[i] = Math.floor(Math.random() * TOTAL_COLOR_IDS)
+            colorIds[i] = pseudorandomColorId(postData.chunkId * CHUNK_SIZE + i)
           }
           const colorIdsBase64 = Buffer.from(colorIds.buffer).toString('base64')
           chunkItem = {
