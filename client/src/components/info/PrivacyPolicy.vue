@@ -11,18 +11,18 @@
     <h3>What {{webAppHostCapitalized}} collects</h3>
     <details>
       <summary>Tile updates</summary>
-      <p>When a tile's color is updated, {{webAppHostCapitalized}} collects the tile's location, tile's color, the timestamp of the update, and your Connection Identifier (defined below) and is stored indefinitely in a database hosted on Amazon Web Services. This data is shared with anyone who accesses {{webAppHostCapitalized}} to keep the globe up to date.</p>
+      <p>When a tile's color is updated, {{webAppHostCapitalized}} collects the tile's location, tile's color, the timestamp of the update, and your Connection Identifier (defined below) which is all stored indefinitely in a database hosted on Amazon Web Services. This data is shared with anyone who accesses {{webAppHostCapitalized}} to keep the globe up to date.</p>
       <p>The Connection Identifier is a random identifier which generated after pressing 'Connect', representing your web-socket connection. This identifier is used for tracking connections, tracking tile updates, and may be used to revert any rule-breaking behaviour. Reloading the page or renewing a session will generate a new identifier.</p>
     </details>
     <details>
       <summary>IP addresses</summary>
       <p>When a tile's color is updated, {{webAppHostCapitalized}} logs your IP address and stores them on Amazon Web Services.</p>
       <p>This data is used to monitor and mitigate rule-breaking behaviour.</p>
-      <p>The logs are automatically deleted after 1 week. If however an IP address is identified as breaking the site's rules, the IP address may be recorded indefinitely to block access to the site's core functionality.</p>
+      <p>The logs are automatically deleted after 1 week. If however an IP address is identified as breaking the site's rules, the IP address may be recorded indefinitely to block their access to the site's core functionality.</p>
     </details>
     <details>
-      <summary>Network request types</summary>
-      <p>After pressing 'Connect', {{webAppHostCapitalized}} logs the 'type' of request made from your browser and stores them on Amazon Web Services. This includes information like how often you fetch the latest updates, or how many updates your browser is making.</p>
+      <summary>Usage data</summary>
+      <p>After pressing 'Enter', {{webAppHostCapitalized}} logs the 'type' of request made from your browser and stores them on Amazon Web Services. This includes information like how often you fetch the latest updates, or how many updates your browser is making.</p>
       <p>This data is used for analytics and to monitor and mitigate rule-breaking behaviour.</p>
       <p>The logs are automatically deleted after 1 week.</p>
     </details>

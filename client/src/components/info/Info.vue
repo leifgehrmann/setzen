@@ -14,19 +14,18 @@
       <div class="bg-neutral-800/50 sm:rounded-t-2xl">
         <img src="../../assets/title.png" alt="SETZEN" class="sm:rounded-t-2xl">
       </div>
-      <div class="px-5 bg-neutral-800/50">
-        <p>Welcome! 𝐒𝐄𝐓𝐙𝐄𝐍 is a multiplayer collaborative canvas where you place tiles on a globe consisting of a million 'trixels'. It is a remix of Reddit’s <a class="underline text-blue-300" href="https://en.wikipedia.org/wiki/R/place">April Fools experiment r/place</a>.</p>
-
-        <p><strong>How to play:</strong> No registration is needed, simply connect! Once the globe has loaded, touch any part of the surface to focus on a tile. A color selector will appear which allows you to change the color of the tile.</p>
+      <div class="intro px-5 bg-neutral-800/50">
         <div class="py-2"></div>
-        <div class="w-full text-center">
-          <p><a href="#terms-of-use">Terms of Use</a> · <a href="#privacy-policy">Privacy Policy</a> <span class="whitespace-nowrap">({{policyDateString}})</span></p>
+        <p>Welcome! 𝐒𝐄𝐓𝐙𝐄𝐍 is a multiplayer collaborative canvas where you place tiles on a globe consisting of a million 'trixels'. It is a remix of Reddit’s <a class="underline text-blue-300" href="https://en.wikipedia.org/wiki/R/place">April Fools experiment r/place</a>.</p>
+        <div class="py-2"></div>
+        <div class="w-full text-center text-xs">
+          <p><a href="#terms-of-use">Terms of Use</a> · <a href="#privacy-policy">Privacy Policy</a><br><span class="whitespace-nowrap">Last Updated: {{policyDateString}}</span></p>
           <div class="py-1"></div>
           <button
-              class="mx-auto text-2xl px-5 py-1 bg-green-600/70 hover:bg-green-500/70 cursor-pointer pointer-events-auto rounded"
+              class="mx-auto text-2xl px-10 py-1 bg-green-600/70 hover:bg-green-500/70 cursor-pointer pointer-events-auto rounded-full"
               @click="emit('connect')"
           >
-            Connect
+            Enter
           </button>
         </div>
         <div class="py-5"></div>
@@ -106,5 +105,12 @@ ul {
 
 #privacy-policy + div {
   padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+}
+
+.intro {
+  background-image: url("../../assets/subtitle.png");
+  background-position: bottom center;
+  background-size: contain;
+  background-repeat: no-repeat;
 }
 </style>

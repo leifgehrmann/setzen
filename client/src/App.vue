@@ -26,10 +26,10 @@ import Info from "./components/info/Info.vue";
 import {hasReviewedPolicy, setReviewedPolicyDate} from "./utils/policyCheck";
 
 let sphereDetail = 224
-let initialisedGlobe = false
 let sphereFaceCount = 20 * (sphereDetail + 1) * (sphereDetail + 1)
 let chunkSize = 16875 // See /server/sendmessage/app.js
 
+let initialisedGlobe = ref(false)
 let showControls = ref(false)
 let showInfo = ref(true)
 let cameraMoveXDirection = ref(0)
@@ -90,7 +90,7 @@ function updateColorId(colorId: number) {
 }
 
 function initGlobe () {
-  if (initialisedGlobe) {
+  if (initialisedGlobe.value) {
     return
   }
   initState(sphereFaceCount, chunkSize)
@@ -159,7 +159,7 @@ function initGlobe () {
     }
   })
 
-  initialisedGlobe = true
+  initialisedGlobe.value = true
 }
 
 function startWebSocket() {

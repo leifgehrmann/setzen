@@ -7,7 +7,7 @@
   <p>
     If there are reports of NSFW content, personal information, hate speech,
     harassment, or copyright infringement, the administrator will either:
-    block the offender's IP address and/or disabled this site indefinitely
+    block the offender's IP address and/or disable this site indefinitely
     until the content is removed.
   </p>
   <p>

@@ -37,7 +37,7 @@
         <li><code><span class="text-xs">ESC</span></code> de-selects the tile.</li>
       </ul>
 
-      <p>Once a tile is selected, the following keys can be used to change the color.</p>
+      <p class="py-4">Once a tile is selected, the following keys can be used to change the color.</p>
 
       <img src="../../assets/keyboard.png" alt="A keyboard layout with different keys displaying keys colored according to ">
     </div>
