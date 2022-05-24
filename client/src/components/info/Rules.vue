@@ -1,6 +1,6 @@
 <template>
   <p>
-    The goal of 𝐒𝐄𝐓𝐙𝐄𝐍 is to collaborate and create interesting artwork.
+    The purpose of 𝐒𝐄𝐓𝐙𝐄𝐍 is to collaborate and create interesting artwork.
     Collaboration may mean overwriting someone else's work, so no one should be
     surprised to see changes being made to their own work.
   </p>

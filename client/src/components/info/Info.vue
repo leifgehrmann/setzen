@@ -28,7 +28,7 @@
             Enter
           </button>
         </div>
-        <div class="py-5"></div>
+        <div class="py-7"></div>
       </div>
       <div class="px-5 py-5 bg-blue-800/50">
         <h2 class="text-blue-300">Controls</h2>
@@ -47,6 +47,7 @@
       <a id="terms-of-use"></a>
       <div class="px-5 py-5 bg-yellow-800/50">
         <h2 class="text-yellow-300">Terms of Use</h2>
+        <TermsOfUse />
       </div>
       <a id="privacy-policy"></a>
       <div class="px-5 py-5 bg-purple-800/50 sm:rounded-b-2xl">
@@ -62,6 +63,7 @@ import PrivacyPolicy from "./PrivacyPolicy.vue";
 import Controls from "./Controls.vue";
 import Rules from "./Rules.vue";
 import Faq from "./Faq.vue";
+import TermsOfUse from "./TermsOfUse.vue";
 import {ref} from "vue";
 import {getPolicyDateString} from "../../utils/policyCheck";
 

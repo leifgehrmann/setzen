@@ -1,5 +1,5 @@
 <template>
-  <p class="text-sm">Effective {{policyDateString}}.</p>
+  <p>Effective {{policyDateString}}.</p>
   <h3>Data Controllers</h3>
   <p>This application has three controllers who control data collected from you by using this website.</p>
   <ul>
