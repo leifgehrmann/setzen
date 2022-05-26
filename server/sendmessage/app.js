@@ -13,13 +13,29 @@ const {
 } = process.env;
 
 const TOTAL_POSITIONS = 1012500;
+
+// Total number of colours supported. The client side has a maximum of
+// 8 bits (a byte), so the maximum total color IDs supported is 256.
 const TOTAL_COLOR_IDS = 32;
-// Chunk size was deliberately chosen to be within
-// the websocket frame size limit of 32KB.
-// Base64 encoding 16875 bytes results in 22443 Bytes.
+
+// Chunk size was deliberately chosen to be within the websocket frame size
+// limit of 32KB.
+// Base64 encoding 16875 bytes results in 22443 bytes (22KB).
 const CHUNK_SIZE = 16875; // 1012500 / 20 / 3
+
+// How long a lock should be held when a chunk update occurs.
 const CHUNK_LOCK_EXPIRATION = 60 * 1000; // 60 seconds
+
+// The number of entries that should trigger a chunk update.
 const UPDATE_CHUNK_QUEUE_SIZE_THRESHOLD = 20;
+
+// Ideally the queue size should not be big. But for safety, the query limit
+// is set to an order of magnitude higher than the queue-update-threshold.
+// Note that DynamoDB has a request limit of 1MB per call, and the websocket
+// frame limit is 32KB.
+// Each item returned has a length of approximately 60 bytes.
+// 60B * 500 ≅ 29KB, so we should be okay.
+const QUEUE_QUERY_LIMIT = 500;
 
 /**
  * @param {string} connectionId
@@ -79,7 +95,8 @@ const updateChunk = async () => {
     ExpressionAttributeNames: {
       '#p': 'position',
       '#t': 'time',
-    }
+    },
+    Limit: QUEUE_QUERY_LIMIT
   }).promise();
 
   // Only start processing queue if there are more than a few elements.
@@ -408,7 +425,8 @@ exports.handler = async event => {
       try {
         let chunkInfoData = await ddb.scan({
           TableName: CHUNK_INFO_TABLE_NAME,
-          ProjectionExpression: 'chunkId, lastUpdatedAt'
+          ProjectionExpression: 'chunkId, lastUpdatedAt',
+          Limit: TOTAL_POSITIONS / CHUNK_SIZE
         }).promise();
         await narrowcastChunkInfoData(
           apigwManagementApi,
@@ -431,7 +449,8 @@ exports.handler = async event => {
           ExpressionAttributeNames: {
             '#p': 'position',
             '#t': 'time',
-          }
+          },
+          Limit: QUEUE_QUERY_LIMIT
         }).promise();
         if (queueData.Count !== 0) {
           await narrowcastQueueData(
