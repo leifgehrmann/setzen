@@ -29,13 +29,34 @@ const CHUNK_LOCK_EXPIRATION = 60 * 1000; // 60 seconds
 // The number of entries that should trigger a chunk update.
 const UPDATE_CHUNK_QUEUE_SIZE_THRESHOLD = 20;
 
-// Ideally the queue size should not be big. But for safety, the query limit
-// is set to an order of magnitude higher than the queue-update-threshold.
-// Note that DynamoDB has a request limit of 1MB per call, and the websocket
-// frame limit is 32KB.
-// Each item returned has a length of approximately 60 bytes.
-// 60B * 500 ≅ 29KB, so we should be okay.
-const QUEUE_QUERY_LIMIT = 500;
+// Ideally the queue size should not be big. But if it is, we might run
+// into an issue where the queued data cannot be sent to the client on
+// page load. It is unclear if this will happen regularly, but we'll add
+// this threshold to ring warning bells.
+// Each queue item has a length of approximately 60 bytes. The websocket
+// frame size cannot be over 32 KB, so approximately 500 items should
+// trigger a warning. (60B * 500 ≅ 29KB)
+const READ_QUEUE_ITEM_COUNT_THRESHOLD_WARNING = 500;
+
+/**
+ * @param {DocumentClient.ScanInput} params
+ * @returns {Promise<*[]>}
+ */
+const scanAll = async (params) => {
+  const items = [];
+  while (true) {
+    const result = await ddb.scan(params).promise();
+    items.push(...result.Items);
+    if (typeof result.LastEvaluatedKey === 'undefined') {
+      break;
+    }
+    console.warn(
+      `Multiple query scans were required to retrieve data. Table Name: '${params.TableName}', LastEvaluatedKey: '${data.LastEvaluatedKey}'`
+    )
+    params.ExclusiveStartKey = result.LastEvaluatedKey
+  }
+  return items
+}
 
 /**
  * @param {string} connectionId
@@ -87,7 +108,7 @@ const addToQueue = async (updateData) => {
  */
 const updateChunk = async () => {
   // Grab all items in the QueueTable.
-  let queueData = await ddb.scan({
+  let queueData = await scanAll({
     TableName: QUEUE_TABLE_NAME,
     // Due to a limitation of DynamoDB, the reserved words 'position'
     // and 'time' need to be expressed as ExpressionAttributeNames.
@@ -95,20 +116,19 @@ const updateChunk = async () => {
     ExpressionAttributeNames: {
       '#p': 'position',
       '#t': 'time',
-    },
-    Limit: QUEUE_QUERY_LIMIT
-  }).promise();
+    }
+  })
 
   // Only start processing queue if there are more than a few elements.
   // This is to minimise write requests to the database.
-  if (queueData.Count < UPDATE_CHUNK_QUEUE_SIZE_THRESHOLD) {
+  if (queueData.length < UPDATE_CHUNK_QUEUE_SIZE_THRESHOLD) {
     return
   }
 
   // Get the ChunkId for any random item and query the ChunkLocks Table for the chunkId.
   // If the ChunkLock is locked, and the locked timestamp was within 1 minute, exit.
-  const queueItemIndex = Math.floor(queueData.Count * Math.random())
-  const chunkId = getChunkIdForPosition(queueData.Items[queueItemIndex].position)
+  const queueItemIndex = Math.floor(queueData.length * Math.random())
+  const chunkId = getChunkIdForPosition(queueData[queueItemIndex].position)
   const lockedAtExpires = Date.now() - CHUNK_LOCK_EXPIRATION
   try {
     await ddb.put({
@@ -146,7 +166,7 @@ const updateChunk = async () => {
 
   // For every queued item with same chunkId, update the chunk data
   const queueKeysToDelete = []
-  queueData.Items.forEach((item) => {
+  queueData.forEach((item) => {
     const chunkIdForItem = getChunkIdForPosition(item.position)
     if (chunkIdForItem !== chunkId) {
       // Skip this item because it is not in the chunk.
@@ -234,9 +254,12 @@ const broadcastUpdateEvent = async (
 ) => {
   let connectionData;
 
-  connectionData = await ddb.scan({ TableName: CONNECTIONS_TABLE_NAME, ProjectionExpression: 'connectionId' }).promise();
+  connectionData = await scanAll({
+    TableName: CONNECTIONS_TABLE_NAME,
+    ProjectionExpression: 'connectionId'
+  });
 
-  return Promise.allSettled(connectionData.Items.map(async ({ connectionId }) => {
+  return Promise.allSettled(connectionData.map(async ({ connectionId }) => {
     try {
       const data = JSON.stringify({
         type: 'update',
@@ -423,15 +446,14 @@ exports.handler = async event => {
       return { statusCode: 200, body: 'Data sent.' };
     case 'readChunkInfo':
       try {
-        let chunkInfoData = await ddb.scan({
+        let chunkInfoData = await scanAll({
           TableName: CHUNK_INFO_TABLE_NAME,
-          ProjectionExpression: 'chunkId, lastUpdatedAt',
-          Limit: TOTAL_POSITIONS / CHUNK_SIZE
-        }).promise();
+          ProjectionExpression: 'chunkId, lastUpdatedAt'
+        })
         await narrowcastChunkInfoData(
           apigwManagementApi,
           connectionId,
-          chunkInfoData.Count !== 0 ? chunkInfoData.Items : []
+          chunkInfoData
         );
       } catch (e) {
         console.error('Failed to scan chunk info. ', e.message)
@@ -443,23 +465,29 @@ exports.handler = async event => {
         // In theory, only 1MB of results will be returned by a single
         // scan. This is okay as we are hoping the queue won't build up
         // too much.
-        let queueData = await ddb.scan({
+        let queueData = await scanAll({
           TableName: QUEUE_TABLE_NAME,
           ProjectionExpression: '#p, colorId, #t',
           ExpressionAttributeNames: {
             '#p': 'position',
             '#t': 'time',
-          },
-          Limit: QUEUE_QUERY_LIMIT
-        }).promise();
-        if (queueData.Count !== 0) {
+          }
+        });
+        if (queueData.length > READ_QUEUE_ITEM_COUNT_THRESHOLD_WARNING) {
+          // If this occurs, that means the client app might not be able to receieve the
+          // websocket frames, since they exceed 32KB.
+          console.warn(
+            `Number of queued items reached dangerous limits. QueueData Length: ${queueData.length}`
+          )
+        }
+        if (queueData.length !== 0) {
           await narrowcastQueueData(
             apigwManagementApi,
             connectionId,
             {
-              positions: queueData.Items.map((item) => item.position),
-              colorIds: queueData.Items.map((item) => item.colorId),
-              times: queueData.Items.map((item) => item.time)
+              positions: queueData.map((item) => item.position),
+              colorIds: queueData.map((item) => item.colorId),
+              times: queueData.map((item) => item.time)
             }
           );
         }
