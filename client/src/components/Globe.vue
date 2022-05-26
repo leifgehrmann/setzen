@@ -9,6 +9,7 @@ import {getSphereShader} from "../utils/sphereMaterial";
 import {createSelectedMarker} from "../utils/selectedMarker";
 import {getTouchById} from "../utils/touchUtils";
 import {colors} from "../utils/colors";
+import {getSavedCameraState, saveCameraState} from "../utils/cameraState";
 
 let renderer: THREE.Renderer
 let scene: THREE.Scene
@@ -208,6 +209,7 @@ function mouseMoveEventHandler (event: MouseEvent) {
     spinAngleMomentum = angle
 
     renderer.render(scene, camera)
+    saveCameraState(camera)
   }
 
   mouseMovePosition = mouseMovePositionNew
@@ -228,6 +230,7 @@ function mouseUpEventHandler (event: MouseEvent) {
     selectPosition(mouseUpPosition)
     requestAnimationFrame(() => {
       renderer.render(scene, camera)
+      saveCameraState(camera)
     })
   }
   if (spinAngleMomentum > 0) {
@@ -247,6 +250,7 @@ function wheelEventHandler (event: WheelEvent) {
   event.preventDefault()
   requestAnimationFrame(() => {
     renderer.render(scene, camera)
+    saveCameraState(camera)
   })
 }
 
@@ -397,6 +401,7 @@ function touchMoveEventHandler (event: TouchEvent) {
 
   if (render) {
     renderer.render(scene, camera)
+    saveCameraState(camera)
   }
 
   touchLastEventTime = Date.now()
@@ -430,6 +435,7 @@ function touchEndEventHandler (event: TouchEvent) {
           selectPosition(touch1Pos)
           requestAnimationFrame(() => {
             renderer.render(scene, camera)
+            saveCameraState(camera)
           })
         }
         touchId1 = null
@@ -655,6 +661,7 @@ function animateControls () {
     }
   }
   renderer.render(scene, camera)
+  saveCameraState(camera)
   animateLastFrameTime = Date.now()
   requestAnimationFrame(animateControls)
 }
@@ -712,6 +719,7 @@ watch(() => [props.selectedPosition], () => {
     requestAnimateControls()
   }
   renderer.render(scene, camera);
+  saveCameraState(camera)
 })
 
 onMounted(() => {
@@ -720,9 +728,6 @@ onMounted(() => {
     initialCameraZoom *= window.innerHeight/window.innerWidth
     maxCameraDistance = initialCameraZoom * 1.5
   }
-  // Pick a random camera position so the user isn't present with the same view as
-  // everyone else. This should prevent favouritism.
-  let cameraVector = new THREE.Vector3(Math.random(), Math.random(), Math.random()).normalize();
 
   const init = () => {
     // Setup the camera.
@@ -732,8 +737,19 @@ onMounted(() => {
         1,
         10000
     );
-    camera.position.copy(cameraVector.multiplyScalar(initialCameraZoom))
-    camera.lookAt(new THREE.Vector3())
+
+    const savedCameraState = getSavedCameraState()
+    if (savedCameraState === null) {
+      // Pick a random camera position so the user isn't presented with the same view as
+      // everyone else. This should prevent favouritism.
+      let cameraVector = new THREE.Vector3(Math.random(), Math.random(), Math.random()).normalize();
+      camera.position.copy(cameraVector.multiplyScalar(initialCameraZoom))
+      camera.lookAt(new THREE.Vector3())
+    } else {
+      camera.position.copy(savedCameraState.position)
+      camera.up.copy(savedCameraState.up)
+      camera.lookAt(new THREE.Vector3())
+    }
 
     raycaster = new THREE.Raycaster();
 
