@@ -61,7 +61,6 @@ const select = (index: number) => {
 
 onMounted(() => {
   window.addEventListener('keypress', (event) => {
-    console.log('keypress')
     if (props.disabled) {
       return
     }

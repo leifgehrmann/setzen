@@ -78,7 +78,7 @@ function updateColorId(colorId: number) {
     console.error('Cannot send update while disconnected.')
     return
   }
-  console.log('updateColorId', position, colorId)
+  // console.log('updateColorId', position, colorId)
   requestUpdate(position, colorId)
   setTimeout(() => {
     if (connectionStatus.value !== 'connected') {

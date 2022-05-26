@@ -511,13 +511,11 @@ function animateControls () {
   // Accelerate the move speed, otherwise, dampen it.
   if (props.moveXDirection !== 0) {
     moveXSpeed += moveAcceleration * props.moveXDirection * Math.max(0.0001, (currentZoom - minCameraDistance) / (maxCameraDistance - minCameraDistance))
-    console.log(moveXSpeed)
   } else {
     moveXSpeed -= Math.min(moveDampening, Math.abs(moveXSpeed)) * ((moveXSpeed > 0) ? 1 : -1)
     if (moveXSpeed < 0.0001 && moveXSpeed > -0.0001) {
       moveXSpeed = 0
     }
-    console.log(moveXSpeed)
   }
   if (props.moveYDirection !== 0) {
     moveYSpeed += moveAcceleration * props.moveYDirection * Math.max(0.0001, (currentZoom - minCameraDistance) / (maxCameraDistance - minCameraDistance))
@@ -711,7 +709,6 @@ watch(() => [props.selectedPosition], () => {
 
     // Animate to the selected marker.
     setAnimateToTarget(averageVector3(v1, v2, v3))
-    console.log('selected')
     requestAnimateControls()
   }
   renderer.render(scene, camera);
@@ -747,7 +744,7 @@ onMounted(() => {
     const radius = sphereSize / 2;
     const geometry = new THREE.IcosahedronGeometry(radius, sphereDetail);
 
-    console.log(geometry.attributes.position.count / 3)
+    // console.log(geometry.attributes.position.count / 3)
     vertexColorIds = new Int32Array(geometry.attributes.position.count);
 
     // To avoid the world appearing a certain color, default the map color to black.
