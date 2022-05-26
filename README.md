@@ -1,29 +1,9 @@
 ![SETZEN](setzen.png)
 
-# Client
+𝐒𝐄𝐓𝐙𝐄𝐍 is a multiplayer collaborative canvas where you place tiles on a globe
+consisting of a million 'trixels'. It is a remix of Reddit’s [April Fools experiment r/place](https://en.wikipedia.org/wiki/R/place).
 
-In a console, change to the `client` directory.
-
-With NPM installed, run the following commands:
-
-**Install dependencies**
-
-```
-$ npm install
-```
-
-**To view**
-
-```
-$ npm run build
-$ npm run preview
-```
-
-**To develop**
-
-```
-$ npm run dev
-```
+You can find a demo at [Setzen.fun](https://setzen.fun/)
 
 # Server
 
@@ -54,12 +34,12 @@ $ make aws-shell
 ### Credentials
 
 Once you are in the interactive shell, you will need to configure aws-cli so
-that it has the correct credentials. These instructions will give you
-instructions on how to create a user with programmatic access. **Once the
-application is deployed, it's recommend to revoke the credentials.**
-Basically, anyone with these credentials could nuke your account, so be very
-careful. (I don't know really if this is how you are supposed to use
-CloudFormation, but it really does not feel safe. 😅)
+that it has the correct credentials. These instructions will guide you on how
+to create a user with programmatic access. **Once the application is deployed,
+it's recommend to revoke the credentials.** Basically, anyone with these
+credentials could nuke your account, so be very careful. (I don't know really
+if this is how you are _supposed_ to use CloudFormation, but it really does
+not feel safe. 😅)
 
 1. In the AWS Console, navigate to IAM and create a new user:
    https://us-east-1.console.aws.amazon.com/iam/home#/users$new?step=details
@@ -110,7 +90,7 @@ configurations.
 
 * Stack Name (Example: `setzen-websockets-app`)
 * AWS Region
-* Parameter TableName (The name of the dynamoDB table)
+* Parameters (The name of the dynamoDB tables)
 * Confirm changes before deploy (Y is recommended)
 * Allow SAM CLI IAM role creation (Y is recommended)
 * Disable rollback (N is recommended)
@@ -118,13 +98,57 @@ configurations.
 * SAM configuration file
 * SAM configuration environment
 
+Once complete, you should see in the output the deployed WebSocketURI.
+Keep a note of this for later when setting up the client.
+
 ### Testing the websocket
 
 ```
+$ cd test-wscast
 $ npm install
 $ npx wscat -c wss://{YOUR-API-ID}.execute-api.{YOUR-REGION}.amazonaws.com/Prod
-> {"action":"sendmessage", "data":"hello world"}
-< hello world
+> { "action": "sendmessage", "data": {"type": "readChunkInfo" } }
+< {"type":"queue","data":{"positions":[],"colorIds":[],"times":[]}}
+```
+
+# Client
+
+In a console, change to the `client` directory.
+
+With NPM installed, run the following commands:
+
+**Install dependencies**
+
+```
+$ npm install
+```
+
+**To configure**
+
+`SETZEN_WEBSOCKET_URL` is the only variable that must be defined for the
+application to function. The rest of the details are merely presentational,
+but useful if you want to customise the info page.
+
+```
+$ export SETZEN_WEBSOCKET_URL='wss://xxxxxxxxxx.execute-api.xx-xxx-x.amazonaws.com/Prod'
+$ export SETZEN_WEBAPP_HOST='example.com'
+$ export SETZEN_CONTACT_EMAIL='admin@example.com'
+$ export SETZEN_CONTACT_URL='https://example.com/admin'
+$ export SETZEN_CONTACT_ISSUES_URL='https://example.com/setzen/issues'
+$ export SETZEN_CONTACT_PROJECT_URL='https://example.com/setzen'
+```
+
+**To view**
+
+```
+$ npm run build
+$ npm run preview
+```
+
+**To develop**
+
+```
+$ npm run dev
 ```
 
 # Attribution
