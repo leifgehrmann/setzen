@@ -387,6 +387,13 @@ exports.handler = async event => {
             TableName: CHUNKS_TABLE_NAME,
             Item: chunkItem
           }).promise();
+          await ddb.put({
+            TableName: CHUNK_INFO_TABLE_NAME,
+            Item: {
+              chunkId: chunkItem.chunkId,
+              lastUpdatedAt: chunkItem.lastUpdatedAt
+            }
+          }).promise();
         }
         await narrowcastChunkData(
           apigwManagementApi,
