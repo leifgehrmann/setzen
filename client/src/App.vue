@@ -176,7 +176,7 @@ function startWebSocket() {
 }
 
 function connect () {
-  setReviewedPolicyDate(new Date())
+  setReviewedPolicyDate()
   initGlobe()
   showInfo.value = false
   if (connectionStatus.value !== 'disconnected') {
