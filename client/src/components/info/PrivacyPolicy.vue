@@ -12,7 +12,7 @@
     <details>
       <summary>Tile updates</summary>
       <p>When a tile's color is updated, {{webAppHostCapitalized}} collects the tile's location, tile's color, the timestamp of the update, and your Connection Identifier (defined below) which is all stored indefinitely in a database hosted on Amazon Web Services. This data is shared with anyone who accesses {{webAppHostCapitalized}} to keep the globe up to date.</p>
-      <p>The Connection Identifier is a random identifier which generated after pressing 'Connect', representing your web-socket connection. This identifier is used for tracking connections, tracking tile updates, and may be used to revert any rule-breaking behaviour. Reloading the page or renewing a session will generate a new identifier.</p>
+      <p>The Connection Identifier is a random UUID, generated after pressing 'Enter'. This identifier is used for tracking connections, tracking tile updates, and may be used to revert any rule-breaking behaviour. Reloading the page or renewing a session will generate a new identifier.</p>
     </details>
     <details>
       <summary>IP addresses</summary>

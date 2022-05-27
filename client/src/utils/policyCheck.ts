@@ -1,5 +1,5 @@
 export function getPolicyDateString(): string {
-  return '2022-05-25';
+  return '2022-05-27';
 }
 
 export function getPolicyDate(): Date {
