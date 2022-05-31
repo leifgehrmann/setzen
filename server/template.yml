@@ -164,6 +164,8 @@ Resources:
       KeySchema:
         - AttributeName: "chunkId"
           KeyType: "HASH"
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: True
       ProvisionedThroughput:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
