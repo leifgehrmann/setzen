@@ -98,7 +98,7 @@ const keyCodes = [
   'Digit7',
   'KeyK',
   'KeyJ',
-  'KeyG',
+  'KeyO',
   'KeyI',
   'KeyU'
 ]
