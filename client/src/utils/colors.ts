@@ -1,3 +1,6 @@
+/* Necessary for colors. */
+/* eslint-disable no-bitwise */
+
 export const colors = [
   '#6d001a',
   '#be0039',
@@ -30,8 +33,8 @@ export const colors = [
   '#515252',
   '#898d90',
   '#d4d7d9',
-  '#ffffff'
-]
+  '#ffffff',
+];
 
 export const labels = [
   'Burgandy',
@@ -65,8 +68,8 @@ export const labels = [
   'Dark gray',
   'Gray',
   'Light gray',
-  'White'
-]
+  'White',
+];
 
 const keyCodes = [
   'Digit1',
@@ -100,19 +103,19 @@ const keyCodes = [
   'KeyJ',
   'KeyO',
   'KeyI',
-  'KeyU'
-]
+  'KeyU',
+];
 
 export const colorFloats = colors.map((color) => {
-  const colorDecimal = parseInt('0x' + color.substring(1))
+  const colorDecimal = parseInt(`0x${color.substring(1)}`, 16);
   return [
-    ((colorDecimal>>16)&255)/255,
-    ((colorDecimal>>8)&255)/255,
-    (colorDecimal&255)/255
-  ]
-})
+    ((colorDecimal >> 16) & 255) / 255,
+    ((colorDecimal >> 8) & 255) / 255,
+    (colorDecimal & 255) / 255,
+  ];
+});
 
-export function getColorIdFromKeyEvent (event: KeyboardEvent): number|null {
-  const index = keyCodes.indexOf(event.code)
-  return index !== -1 ? index : null
+export function getColorIdFromKeyEvent(event: KeyboardEvent): number | null {
+  const index = keyCodes.indexOf(event.code);
+  return index !== -1 ? index : null;
 }

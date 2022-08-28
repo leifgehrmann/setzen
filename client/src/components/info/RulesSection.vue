@@ -18,11 +18,11 @@
 </template>
 
 <script setup lang="ts">
-import {ref} from "vue";
-import {getContactIssuesUrl, getContactEmail} from "../../utils/definedVars";
+import { ref } from 'vue';
+import { getContactIssuesUrl, getContactEmail } from '../../utils/definedVars';
 
-const issuesUrl = ref(getContactIssuesUrl())
-const email = ref(getContactEmail())
+const issuesUrl = ref(getContactIssuesUrl());
+const email = ref(getContactEmail());
 </script>
 
 <style scoped>

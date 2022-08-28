@@ -1,9 +1,8 @@
-import { colorFloats } from "./colors";
-import * as THREE from "three";
+import * as THREE from 'three';
+import { colorFloats } from './colors';
 
-export function getSphereShader(): THREE.ShaderMaterial {
-  const vertexShaderColorIdMapping = colorFloats.map((colorFloatArr, index) => {
-    return `
+export default function getSphereShader(): THREE.ShaderMaterial {
+  const vertexShaderColorIdMapping = colorFloats.map((colorFloatArr, index) => `
     case ${index}:
       vColor = vec4(
         ${colorFloatArr[0]},
@@ -12,8 +11,7 @@ export function getSphereShader(): THREE.ShaderMaterial {
         1
       );
       break;
-`
-  })
+`);
 
   const vertexShader = `
 attribute int vertexColorId;
@@ -25,7 +23,7 @@ void main() {
 ${vertexShaderColorIdMapping.join('')}
   }
 }
-`
+`;
 
   const fragmentShader = `
 varying vec3 vNormal;
@@ -35,12 +33,12 @@ varying vec4 vColor;
 void main() {
   gl_FragColor = vColor;
 }
-`
+`;
 
   return new THREE.ShaderMaterial({
     vertexShader,
     fragmentShader,
     transparent: true,
-    depthTest: true
+    depthTest: true,
   });
 }

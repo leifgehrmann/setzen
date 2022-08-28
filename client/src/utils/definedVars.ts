@@ -2,27 +2,27 @@
 // For whatever reason, they cannot be accessed within Vue files directly,
 // so this module provides access to them.
 
-export function getWebAppHost (): string {
+export function getWebAppHost(): string {
   // @ts-ignore
-  return webAppHost
+  return webAppHost;
 }
-export function getWebSocketUrl (): string {
+export function getWebSocketUrl(): string {
   // @ts-ignore
-  return webSocketUrl
+  return webSocketUrl;
 }
-export function getContactEmail (): string {
+export function getContactEmail(): string {
   // @ts-ignore
-  return contactEmail
+  return contactEmail;
 }
-export function getContactUrl (): string {
+export function getContactUrl(): string {
   // @ts-ignore
-  return contactUrl
+  return contactUrl;
 }
-export function getContactIssuesUrl (): string {
+export function getContactIssuesUrl(): string {
   // @ts-ignore
-  return contactIssuesUrl
+  return contactIssuesUrl;
 }
-export function getContactProjectUrl (): string {
+export function getContactProjectUrl(): string {
   // @ts-ignore
-  return contactProjectUrl
+  return contactProjectUrl;
 }

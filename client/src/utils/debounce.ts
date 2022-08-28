@@ -1,6 +1,6 @@
-export function debounce<T extends unknown[], U>(
+export default function debounce<T extends unknown[], U>(
   callback: (...args: T) => PromiseLike<U> | U,
-  wait: number
+  wait: number,
 ) {
   let timer: number;
   return (...args: T): Promise<U> => {

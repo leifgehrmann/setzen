@@ -1,14 +1,14 @@
 <template>
   <div class="flex flex-row overflow-x-auto">
-    <label for="info-control-touch" class="info-control-input" :class="{'info-control-input-selected': control === 'touch'}">
+    <label for="info-control-touch" class="info-control-input" :class="{ 'info-control-input-selected': control === 'touch' }">
       <input type="radio" id="info-control-touch" value="touch" v-model="control">
       <span>Touch</span>
     </label>
-    <label for="info-control-mouse" class="info-control-input" :class="{'info-control-input-selected': control === 'mouse'}">
+    <label for="info-control-mouse" class="info-control-input" :class="{ 'info-control-input-selected': control === 'mouse' }">
       <input type="radio" id="info-control-mouse" value="mouse" v-model="control">
       <span>Mouse</span>
     </label>
-    <label for="info-control-keyboard" class="info-control-input" :class="{'info-control-input-selected': control === 'keyboard'}">
+    <label for="info-control-keyboard" class="info-control-input" :class="{ 'info-control-input-selected': control === 'keyboard' }">
       <input type="radio" id="info-control-keyboard" value="keyboard" v-model="control">
       <span>Keyboard</span>
     </label>
@@ -45,9 +45,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref } from 'vue';
 
-const control = ref('touch')
+const control = ref('touch');
 </script>
 
 <style scoped>
