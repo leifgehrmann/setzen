@@ -15,6 +15,7 @@ jobs:
         node-version: 16.x
     - name: npm install and lint
       run: |
+        cd client
         npm ci
         npm run lint
       env:
