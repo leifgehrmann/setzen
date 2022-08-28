@@ -1,48 +1,56 @@
 <template>
   <div
-      v-if="connecting || !connected || loading"
-      class="py-2 bg-neutral-800/70 text-neutral-200 backdrop-blur-lg rounded-lg"
+    v-if="connecting || !connected || loading"
+    class="py-2 bg-neutral-800/70 text-neutral-200 backdrop-blur-lg rounded-lg"
   >
     <span
-        v-if="connecting"
-        class="px-4"
+      v-if="connecting"
+      class="px-4"
     >
       Connecting...
     </span>
     <span
-        v-else-if="!connected"
-        class="pl-4 pr-2"
+      v-else-if="!connected"
+      class="pl-4 pr-2"
     >
       <span class="pr-4">Session disconnected</span>
       <button
-          class="px-4 py-1 bg-green-600/70 cursor-pointer pointer-events-auto rounded"
-          @click="emit('reconnect')"
+        type="button"
+        class="px-4 py-1 bg-green-600/70 cursor-pointer pointer-events-auto rounded"
+        @click="emit('reconnect')"
       >
         Reconnect
       </button>
     </span>
     <span
-        v-else-if="loading"
-        class="px-4 inline-block w-48"
+      v-else-if="loading"
+      class="px-4 inline-block w-48"
     >Loading ({{Math.floor(percentLoaded)}}%)</span>
   </div>
 </template>
 
 <script setup lang="ts">
 
-import {computed} from "vue";
+import { computed } from 'vue';
 
 const props = defineProps({
-  connecting: Boolean,
-  connected: Boolean,
-  percentLoaded: Number,
-})
+  connecting: {
+    type: Boolean,
+    default: false,
+  },
+  connected: {
+    type: Boolean,
+    default: false,
+  },
+  percentLoaded: {
+    type: Number,
+    default: 0,
+  },
+});
 
-const loading = computed(() => {
-  return props.connected && props.percentLoaded !== 100
-})
+const loading = computed(() => props.connected && props.percentLoaded !== 100);
 
-const emit = defineEmits(['reconnect'])
+const emit = defineEmits(['reconnect']);
 
 </script>
 

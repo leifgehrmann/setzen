@@ -1,5 +1,5 @@
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -11,5 +11,5 @@ export default defineConfig({
     contactUrl: JSON.stringify(process.env.SETZEN_CONTACT_URL),
     contactIssuesUrl: JSON.stringify(process.env.SETZEN_CONTACT_ISSUES_URL),
     contactProjectUrl: JSON.stringify(process.env.SETZEN_CONTACT_PROJECT_URL),
-  }
-})
+  },
+});

@@ -23,10 +23,10 @@
 </template>
 
 <script setup lang="ts">
-import {ref} from "vue";
-import {getContactProjectUrl} from "../../utils/definedVars";
+import { ref } from 'vue';
+import { getContactProjectUrl } from '../../utils/definedVars';
 
-const projectUrl = ref(getContactProjectUrl())
+const projectUrl = ref(getContactProjectUrl());
 </script>
 
 <style scoped>

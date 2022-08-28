@@ -3,13 +3,13 @@ export function getPolicyDateString(): string {
 }
 
 export function setReviewedPolicyDate() {
-  localStorage.setItem('reviewedPolicyDate', getPolicyDateString())
+  localStorage.setItem('reviewedPolicyDate', getPolicyDateString());
 }
 
-export function hasReviewedPolicy (): boolean {
-  const reviewedPolicyDate = localStorage.getItem('reviewedPolicyDate')
+export function hasReviewedPolicy(): boolean {
+  const reviewedPolicyDate = localStorage.getItem('reviewedPolicyDate');
   if (reviewedPolicyDate === null) {
-    return false
+    return false;
   }
-  return reviewedPolicyDate === getPolicyDateString()
+  return reviewedPolicyDate === getPolicyDateString();
 }
