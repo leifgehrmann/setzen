@@ -6,20 +6,20 @@
     you by using this website.
   </p>
   <ul>
-    <li>The <a href="https://github.com/leifgehrmann">administrator</a> of {{webAppHost}}.</li>
+    <li>The <a href="https://github.com/leifgehrmann">administrator</a> of {{ webAppHostString }}.</li>
     <li>GitHub, Inc.</li>
     <li>Amazon Web Services, Inc.</li>
   </ul>
   <section>
-    <h3>What {{webAppHost}} collects</h3>
+    <h3>What {{ webAppHostString }} collects</h3>
     <details>
       <summary>Tile updates</summary>
       <p>
-        When a tile's color is updated, {{webAppHost}} collects
+        When a tile's color is updated, {{ webAppHostString }} collects
         the tile's location, tile's color, the timestamp of the update, and
         your Connection Identifier (defined below) which is all stored
         indefinitely in a database hosted on Amazon Web Services. This data
-        is shared with anyone who accesses {{webAppHost}} to keep
+        is shared with anyone who accesses {{ webAppHostString }} to keep
         the globe up to date.
       </p>
       <p>
@@ -33,7 +33,7 @@
     <details>
       <summary>IP addresses</summary>
       <p>
-        When a tile's color is updated, {{webAppHost}} logs your
+        When a tile's color is updated, {{ webAppHostString }} logs your
         IP address and stores them on Amazon Web Services.
       </p>
       <p>This data is used to monitor and mitigate rule-breaking behaviour.</p>
@@ -47,7 +47,7 @@
     <details>
       <summary>Usage data</summary>
       <p>
-        After pressing 'Enter', {{webAppHost}} logs the 'type' of
+        After pressing 'Enter', {{ webAppHostString }} logs the 'type' of
         request made from your browser and stores them on Amazon Web Services.
         This includes information like how often you fetch the latest updates,
         or how many updates your browser is making.
@@ -64,14 +64,14 @@
     <details>
       <summary>GitHub, Inc.</summary>
       <p>
-        {{webAppHost}} is hosted on GitHub Pages, a service
+        {{ webAppHostString }} is hosted on GitHub Pages, a service
         provided by GitHub Inc. which have
         <a href="https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement#github-pages">their own privacy policy</a>.
       </p>
     </details>
     <details>
       <summary>Amazon Web Services, Inc.</summary>
-      <p>{{webAppHost}} uses Amazon API Gateway, a service provided
+      <p>{{ webAppHostString }} uses Amazon API Gateway, a service provided
         by Amazon Web Services Inc. which have
         <a href="https://aws.amazon.com/privacy/">their own privacy policy</a>.
       </p>
@@ -84,7 +84,7 @@ import { ref } from 'vue';
 import { getPolicyDateString } from '../../utils/policyCheck';
 import { getWebAppHost } from '../../utils/definedVars';
 
-const webAppHost = ref(getWebAppHost());
+const webAppHostString = ref(getWebAppHost());
 const policyDateString = ref(getPolicyDateString());
 </script>
 
