@@ -3,7 +3,7 @@
 𝐒𝐄𝐓𝐙𝐄𝐍 is a multiplayer collaborative canvas where you place tiles on a globe
 consisting of a million 'trixels'. It is a remix of Reddit’s [April Fools experiment r/place](https://en.wikipedia.org/wiki/R/place).
 
-You can find a demo at [Setzen.fun](https://setzen.fun/)
+You can find a demo at [setzen.leifgehrmann.com](https://setzen.leifgehrmann.com/)
 
 # Server
 
