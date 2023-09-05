@@ -263,7 +263,7 @@ Resources:
       CodeUri: onconnect/
       Handler: app.handler
       MemorySize: 256
-      Runtime: nodejs14.x
+      Runtime: nodejs16.x
       Environment:
         Variables:
           CONNECTIONS_TABLE_NAME: !Ref ConnectionsTableName
@@ -284,7 +284,7 @@ Resources:
       CodeUri: ondisconnect/
       Handler: app.handler
       MemorySize: 256
-      Runtime: nodejs14.x
+      Runtime: nodejs16.x
       Environment:
         Variables:
           CONNECTIONS_TABLE_NAME: !Ref ConnectionsTableName
@@ -305,7 +305,7 @@ Resources:
       CodeUri: sendmessage/
       Handler: app.handler
       MemorySize: 256
-      Runtime: nodejs14.x
+      Runtime: nodejs16.x
       Environment:
         Variables:
           CONNECTIONS_TABLE_NAME: !Ref ConnectionsTableName
