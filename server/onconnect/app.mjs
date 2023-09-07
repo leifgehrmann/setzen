@@ -1,8 +1,8 @@
-import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoBClient, PuttemCommand } from "@aws-sdk/client-dynamodb";
 
 const client = new DynamoDBClient({ apiVersion: '2012-08-10', region: process.env.AWS_REGION });
 
-exports.handler = async event => {
+export async function handler(event) {
   const putParams = {
     TableName: process.env.CONNECTIONS_TABLE_NAME,
     Item: {
@@ -18,4 +18,4 @@ exports.handler = async event => {
   }
 
   return { statusCode: 200, body: 'Connected.' };
-};
+}
