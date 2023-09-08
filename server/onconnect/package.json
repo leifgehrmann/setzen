@@ -6,8 +6,8 @@
   "type": "module",
   "author": "Leif Gehrmann",
   "license": "MIT",
-  "dependencies": {},
-  "devDependencies": {
+  "dependencies": {
+    "@aws-sdk/lib-dynamodb": "^3.409.0",
     "@aws-sdk/client-dynamodb": "^3.405.0"
   }
 }
