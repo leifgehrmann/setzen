@@ -166,7 +166,7 @@ import { hasReviewedPolicy, setReviewedPolicyDate } from './utils/policyCheck';
 
 const sphereDetail = 224;
 const sphereFaceCount = 20 * (sphereDetail + 1) * (sphereDetail + 1);
-const chunkSize = 16875; // See /server/sendmessage/app.js
+const chunkSize = 16875; // See /server/sendmessage/app.mjs
 
 const initialisedGlobe = ref(false);
 const showControls = ref(false);

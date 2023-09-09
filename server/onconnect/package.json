@@ -2,11 +2,12 @@
   "name": "on-connect",
   "version": "1.0.0",
   "description": "onconnect for WebSockets on API Gateway",
-  "main": "src/app.js",
+  "main": "app.mjs",
+  "type": "module",
   "author": "Leif Gehrmann",
   "license": "MIT",
-  "dependencies": {},
-  "devDependencies": {
-    "aws-sdk": "^2.1118.0"
+  "dependencies": {
+    "@aws-sdk/lib-dynamodb": "^3.409.0",
+    "@aws-sdk/client-dynamodb": "^3.405.0"
   }
 }
