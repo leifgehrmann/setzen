@@ -1,7 +1,18 @@
-const AWS = require('aws-sdk');
-const crypto = require('crypto');
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import {
+  BatchWriteCommand,
+  DynamoDBDocumentClient,
+  DeleteCommand,
+  GetCommand,
+  PutCommand,
+  ScanCommand
+} from "@aws-sdk/lib-dynamodb";
+import { PostToConnectionCommand, ApiGatewayManagementApiClient } from "@aws-sdk/client-apigatewaymanagementapi";
+import crypto from "crypto";
 
-const ddb = new AWS.DynamoDB.DocumentClient({ apiVersion: '2012-08-10', region: process.env.AWS_REGION });
+const ddbClient = new DynamoDBClient({ apiVersion: '2012-08-10', region: process.env.AWS_REGION });
+const agmClient = new ApiGatewayManagementApiClient({ region: process.env.AWS_REGION });
+const ddbDocClient = DynamoDBDocumentClient.from(ddbClient);
 
 const {
   CONNECTIONS_TABLE_NAME,
@@ -39,13 +50,13 @@ const UPDATE_CHUNK_QUEUE_SIZE_THRESHOLD = 20;
 const READ_QUEUE_ITEM_COUNT_THRESHOLD_WARNING = 500;
 
 /**
- * @param {DocumentClient.ScanInput} params
+ * @param {ScanCommandInput} params
  * @returns {Promise<*[]>}
  */
 const scanAll = async (params) => {
   const items = [];
   while (true) {
-    const result = await ddb.scan(params).promise();
+    const result = await ddbDocClient.send(new ScanCommand(params))
     items.push(...result.Items);
     if (typeof result.LastEvaluatedKey === 'undefined') {
       break;
@@ -76,7 +87,7 @@ const addToUpdates = async (connectionId, updateData) => {
   };
 
   try {
-    await ddb.put(putParams).promise();
+    await ddbDocClient.send(new PutCommand(putParams));
   } catch (err) {
     return { statusCode: 500, body: 'Failed to connect: ' + JSON.stringify(err) };
   }
@@ -97,7 +108,7 @@ const addToQueue = async (updateData) => {
   };
 
   try {
-    await ddb.put(updateParams).promise();
+    await ddbDocClient.send(new PutCommand(updateParams));
   } catch (err) {
     return { statusCode: 500, body: 'Failed to connect: ' + JSON.stringify(err) };
   }
@@ -131,7 +142,7 @@ const updateChunk = async () => {
   const chunkId = getChunkIdForPosition(queueData[queueItemIndex].position)
   const lockedAtExpires = Date.now() - CHUNK_LOCK_EXPIRATION
   try {
-    await ddb.put({
+    await ddbDocClient.send(new PutCommand({
       TableName: CHUNK_LOCKS_TABLE_NAME,
       Item: {
         chunkId: chunkId,
@@ -141,22 +152,22 @@ const updateChunk = async () => {
       ExpressionAttributeValues: {
         ':locked_at_expires': lockedAtExpires
       }
-    }).promise();
+    }));
   } catch (err) {
     return
   }
 
   // Query the Chunks table for the ChunkId.
-  const chunkData = await ddb.get({
+  const chunkData = await ddbDocClient.send(new GetCommand({
     TableName: CHUNKS_TABLE_NAME,
     Key: {chunkId: chunkId}
-  }).promise();
+  }));
   if (chunkData.Item === undefined) {
     // Reset the chunkLock if there is no chunk.
-    await ddb.delete({
+    await ddbDocClient.send(new DeleteCommand({
       TableName: CHUNK_LOCKS_TABLE_NAME,
       Key: { chunkId: chunkId }
-    }).promise();
+    }));
     return
   }
 
@@ -188,7 +199,7 @@ const updateChunk = async () => {
   // Store the new chunk value.
   try {
     const colorIdsBase64 = Buffer.from(uint8Array.buffer).toString('base64')
-    await ddb.batchWrite({
+    await ddbDocClient.send(new BatchWriteCommand({
       RequestItems: {
         [CHUNKS_TABLE_NAME]: [{
           PutRequest: {
@@ -208,7 +219,7 @@ const updateChunk = async () => {
           }
         }]
       }
-    }).promise()
+    }));
   } catch (err) {
     console.error('Failed to put chunk. ' + err.message)
     return
@@ -224,11 +235,11 @@ const updateChunk = async () => {
           }
         }
       })
-      await ddb.batchWrite({
+      await ddbDocClient.send(new BatchWriteCommand({
         RequestItems: {
           [QUEUE_TABLE_NAME]: queueDeleteRequests
         }
-      }).promise()
+      }));
     }
   } catch (err) {
     console.error('Failed to delete queue items. ' + err.message)
@@ -236,20 +247,20 @@ const updateChunk = async () => {
   }
 
   // Delete the chunkLock.
-  await ddb.delete({
+  await ddbDocClient.send(new DeleteCommand({
     TableName: CHUNK_LOCKS_TABLE_NAME,
     Key: { chunkId: chunkId }
-  }).promise();
+  }));
 }
 
 /**
  *
- * @param {AWS.ApiGatewayManagementApi} apigwManagementApi
+ * @param {ApiGatewayManagementApiClient} agmClient
  * @param {{position: number, colorId: number, time: number}} updateData
  * @returns {Promise<unknown>}
  */
 const broadcastUpdateEvent = async (
-  apigwManagementApi,
+  agmClient,
   updateData
 ) => {
   let connectionData;
@@ -265,11 +276,11 @@ const broadcastUpdateEvent = async (
         type: 'update',
         data: updateData
       })
-      await apigwManagementApi.postToConnection({ ConnectionId: connectionId, Data: data }).promise();
+      await agmClient.send(new PostToConnectionCommand({ ConnectionId: connectionId, Data: data }));
     } catch (e) {
       if (e.statusCode === 410) {
         console.log(`Found stale connection, deleting ${connectionId}`);
-        await ddb.delete({ TableName: CONNECTIONS_TABLE_NAME, Key: { connectionId } }).promise();
+        await ddbDocClient.send(new DeleteCommand({ TableName: CONNECTIONS_TABLE_NAME, Key: { connectionId } }));
       } else {
         throw e;
       }
@@ -278,13 +289,13 @@ const broadcastUpdateEvent = async (
 }
 
 /**
- * @param {AWS.ApiGatewayManagementApi} apigwManagementApi
+ * @param {ApiGatewayManagementApiClient} agmClient
  * @param {string} connectionId
  * @param {{chunkId: number, colorIds: string, lastUpdatedAt: number}} chunkData
  * @returns {Promise<void>}
  */
 const narrowcastChunkData = async (
-  apigwManagementApi,
+  agmClient,
   connectionId,
   chunkData
 ) => {
@@ -292,17 +303,17 @@ const narrowcastChunkData = async (
     type: 'chunk',
     data: chunkData
   })
-  await apigwManagementApi.postToConnection({ ConnectionId: connectionId, Data: data }).promise();
+  await agmClient.send(new PostToConnectionCommand({ ConnectionId: connectionId, Data: data }));
 }
 
 /**
- * @param {AWS.ApiGatewayManagementApi} apigwManagementApi
+ * @param {ApiGatewayManagementApiClient} agmClient
  * @param {string} connectionId
  * @param {{chunkId: number, lastUpdatedAt: number}[]} chunkInfoData
  * @returns {Promise<void>}
  */
 const narrowcastChunkInfoData = async (
-  apigwManagementApi,
+  agmClient,
   connectionId,
   chunkInfoData
 ) => {
@@ -310,17 +321,17 @@ const narrowcastChunkInfoData = async (
     type: 'chunkInfo',
     data: chunkInfoData
   })
-  await apigwManagementApi.postToConnection({ ConnectionId: connectionId, Data: data }).promise();
+  await agmClient.send(new PostToConnectionCommand({ ConnectionId: connectionId, Data: data }));
 }
 
 /**
- * @param {AWS.ApiGatewayManagementApi} apigwManagementApi
+ * @param {ApiGatewayManagementApiClient} agmClient
  * @param {string} connectionId
  * @param {{positions: number[], colorIds: number[], times: number[]}} queueData
  * @returns {Promise<void>}
  */
 const narrowcastQueueData = async (
-  apigwManagementApi,
+  agmClient,
   connectionId,
   queueData
 ) => {
@@ -328,7 +339,7 @@ const narrowcastQueueData = async (
     type: 'queue',
     data: queueData
   })
-  await apigwManagementApi.postToConnection({ ConnectionId: connectionId, Data: data }).promise();
+  await agmClient.send(new PostToConnectionCommand({ ConnectionId: connectionId, Data: data }));
 }
 
 /**
@@ -385,14 +396,11 @@ function pseudorandomColorId (seed) {
   return Math.floor((x - Math.floor(x)) * TOTAL_COLOR_IDS);
 }
 
-exports.handler = async event => {
+export const handler = async (event) => {
   const connectionId = event.requestContext.connectionId
   const domainName = event.requestContext.domainName
   const stage = event.requestContext.stage
-  const apigwManagementApi = new AWS.ApiGatewayManagementApi({
-    apiVersion: '2018-11-29',
-    endpoint: domainName + '/' + stage
-  });
+  agmClient.config.endpoint = 'https://' + domainName + '/' + stage;
 
   const postData = JSON.parse(event.body).data;
 
@@ -405,10 +413,10 @@ exports.handler = async event => {
         return { statusCode: 400, body: 'Invalid chunkId.' };
       }
       try {
-        const chunkData = await ddb.get({
+        const chunkData = await ddbDocClient.send(new GetCommand({
           TableName: CHUNKS_TABLE_NAME,
           Key: { chunkId: postData.chunkId }
-        }).promise();
+        }));
         let chunkItem = chunkData.Item
         // If a Chunk does not exist, we will populate the table
         // with a bunch of fake values.
@@ -423,20 +431,20 @@ exports.handler = async event => {
             colorIds: colorIdsBase64,
             lastUpdatedAt: Date.now()
           }
-          await ddb.put({
+          await ddbDocClient.send(new PutCommand({
             TableName: CHUNKS_TABLE_NAME,
             Item: chunkItem
-          }).promise();
-          await ddb.put({
+          }));
+          await ddbDocClient.send(new PutCommand({
             TableName: CHUNK_INFO_TABLE_NAME,
             Item: {
               chunkId: chunkItem.chunkId,
               lastUpdatedAt: chunkItem.lastUpdatedAt
             }
-          }).promise();
+          }));
         }
         await narrowcastChunkData(
-          apigwManagementApi,
+          agmClient,
           connectionId,
           chunkItem
         );
@@ -445,18 +453,24 @@ exports.handler = async event => {
       }
       return { statusCode: 200, body: 'Data sent.' };
     case 'readChunkInfo':
+      let chunkInfoData;
       try {
-        let chunkInfoData = await scanAll({
+        chunkInfoData = await scanAll({
           TableName: CHUNK_INFO_TABLE_NAME,
           ProjectionExpression: 'chunkId, lastUpdatedAt'
         })
+      } catch (e) {
+        console.error('Failed to scan chunk info. ', e.message)
+        return { statusCode: 500, body: e.stack };
+      }
+      try {
         await narrowcastChunkInfoData(
-          apigwManagementApi,
+          agmClient,
           connectionId,
           chunkInfoData
         );
       } catch (e) {
-        console.error('Failed to scan chunk info. ', e.message)
+        console.error('Failed to narrowcast chunk info. ', e.message)
         return { statusCode: 500, body: e.stack };
       }
       return { statusCode: 200, body: 'Data sent.' };
@@ -482,7 +496,7 @@ exports.handler = async event => {
         }
         if (queueData.length !== 0) {
           await narrowcastQueueData(
-            apigwManagementApi,
+            agmClient,
             connectionId,
             {
               positions: queueData.map((item) => item.position),
@@ -528,7 +542,7 @@ exports.handler = async event => {
       }
 
       let promises = []
-      promises.push(broadcastUpdateEvent(apigwManagementApi, updateData))
+      promises.push(broadcastUpdateEvent(agmClient, updateData))
       const updateChunkPromise = updateChunk()
       promises.push(updateChunkPromise)
       await Promise.allSettled(promises);

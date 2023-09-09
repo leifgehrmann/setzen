@@ -7,8 +7,8 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, DeleteCommand } from "@aws-sdk/lib-dynamodb";
 
-const client = new DynamoDBClient({ apiVersion: '2012-08-10', region: process.env.AWS_REGION });
-const docClient = DynamoDBDocumentClient.from(client);
+const ddbClient = new DynamoDBClient({ apiVersion: '2012-08-10', region: process.env.AWS_REGION });
+const ddbDocClient = DynamoDBDocumentClient.from(ddbClient);
 
 export const handler = async (event) => {
   const deleteParams = {
@@ -21,7 +21,7 @@ export const handler = async (event) => {
   const deleteCommand = new DeleteCommand(deleteParams);
 
   try {
-    await docClient.send(deleteCommand);
+    await ddbDocClient.send(deleteCommand);
   } catch (err) {
     return { statusCode: 500, body: 'Failed to disconnect: ' + JSON.stringify(err) };
   }
