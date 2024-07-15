@@ -11,6 +11,7 @@ on:
     - main
     paths:
     - 'client/**'
+    - '.github/workflows/gh-pages.yml'
 
 jobs:
   build:
@@ -26,11 +27,11 @@ jobs:
 
     - name: npm install, build
       run: |
-        sed -i '/\/dist/d' .gitignore
         cd client
         npm ci
         npm run build
         touch ./dist/.nojekyll
+        sed -i '/\/dist/d' .gitignore
         echo $SETZEN_WEBAPP_HOST >> ./dist/CNAME
       env:
         SETZEN_WEBSOCKET_URL: ${{secrets.SETZEN_WEBSOCKET_URL}}
