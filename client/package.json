@@ -11,13 +11,13 @@
   },
   "dependencies": {
     "base64-arraybuffer": "^1.0.2",
-    "three": "^0.159.0",
+    "three": "^0.166.0",
     "vue": "^3.3.12"
   },
   "devDependencies": {
-    "@babel/types": "^7.23.6",
+    "@babel/types": "^7.24.9",
     "@rushstack/eslint-patch": "^1.6.1",
-    "@types/three": "^0.159.0",
+    "@types/three": "^0.166.0",
     "@vitejs/plugin-vue": "^4.5.2",
     "@vue/eslint-config-airbnb-with-typescript": "^7.0.1",
     "autoprefixer": "^10.4.16",
