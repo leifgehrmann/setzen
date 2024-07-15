@@ -27,11 +27,11 @@ jobs:
 
     - name: npm install, build
       run: |
+        sed -i '/\/dist/d' .gitignore
         cd client
         npm ci
         npm run build
         touch ./dist/.nojekyll
-        sed -i '/\/dist/d' .gitignore
         echo $SETZEN_WEBAPP_HOST >> ./dist/CNAME
       env:
         SETZEN_WEBSOCKET_URL: ${{secrets.SETZEN_WEBSOCKET_URL}}
@@ -44,7 +44,7 @@ jobs:
     - name: Upload Pages artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: './dist'
+        path: './client/dist'
 
     - name: Deploy to GitHub Pages
       id: deployment
