@@ -34,6 +34,7 @@ jobs:
         touch ./dist/.nojekyll
         echo $SETZEN_WEBAPP_HOST >> ./dist/CNAME
       env:
+        SETZEN_ARCHIVE_URL: ${{secrets.SETZEN_ARCHIVE_URL}}
         SETZEN_WEBSOCKET_URL: ${{secrets.SETZEN_WEBSOCKET_URL}}
         SETZEN_WEBAPP_HOST: ${{secrets.SETZEN_WEBAPP_HOST}}
         SETZEN_CONTACT_EMAIL: ${{secrets.SETZEN_CONTACT_EMAIL}}
