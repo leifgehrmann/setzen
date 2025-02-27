@@ -5,6 +5,7 @@ import vue from '@vitejs/plugin-vue';
 export default defineConfig({
   plugins: [vue()],
   define: {
+    archiveUrl: JSON.stringify(process.env.SETZEN_ARCHIVE_URL),
     webAppHost: JSON.stringify(process.env.SETZEN_WEBAPP_HOST),
     webSocketUrl: JSON.stringify(process.env.SETZEN_WEBSOCKET_URL),
     contactEmail: JSON.stringify(process.env.SETZEN_CONTACT_EMAIL),

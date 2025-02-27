@@ -8,9 +8,10 @@
 import {
   chunkTimes, getTotalChunks, hasLoadedFromLocalStorage, triggerBulkUpdate, update, updateChunk,
 } from './state';
-import { getWebSocketUrl } from './definedVars';
+import ArchivedWebSocket from './archivedWebSocket';
+import { getArchiveUrl, getWebSocketUrl } from './definedVars';
 
-let webSocket: WebSocket | null;
+let webSocket: ArchivedWebSocket | WebSocket | null;
 let syncAttempts = 0;
 let syncing = false;
 let chunkLoadingId: number = 0;
@@ -27,7 +28,12 @@ export function initWebSocket(
   openCallback: Function,
   closeCallback: Function,
 ) {
-  webSocket = new WebSocket(getWebSocketUrl());
+  const archiveUrl = getArchiveUrl();
+  if (archiveUrl.length !== 0) {
+    webSocket = new ArchivedWebSocket(archiveUrl);
+  } else {
+    webSocket = new WebSocket(getWebSocketUrl());
+  }
 
   webSocket.addEventListener('open', () => {
     openCallback();
@@ -37,7 +43,7 @@ export function initWebSocket(
     closeCallback();
   });
 
-  webSocket.addEventListener('message', (event) => {
+  webSocket.addEventListener('message', (event: MessageEvent) => {
     const message = JSON.parse(event.data);
     switch (message.type) {
       case 'chunk': {
@@ -82,11 +88,11 @@ export async function requestUpdate(position: number, colorId: number): Promise<
   webSocket.send(JSON.stringify({ action: 'sendmessage', data: { type: 'update', position, colorId } }));
 }
 
-async function requestQueueData(ws: WebSocket): Promise<void> {
+async function requestQueueData(ws: ArchivedWebSocket | WebSocket): Promise<void> {
   ws.send(JSON.stringify({ action: 'sendmessage', data: { type: 'readQueue' } }));
 }
 
-async function requestChunkData(ws: WebSocket, chunkId: number): Promise<void> {
+async function requestChunkData(ws: ArchivedWebSocket | WebSocket, chunkId: number): Promise<void> {
   for (let attempt = 0; attempt < chunkLoadingMaxAttempts; attempt += 1) {
     try {
       await (new Promise((resolve, reject) => {
@@ -107,7 +113,7 @@ async function requestChunkData(ws: WebSocket, chunkId: number): Promise<void> {
 }
 
 async function requestChunkInfo(
-  ws: WebSocket,
+  ws: ArchivedWebSocket | WebSocket,
 ): Promise<{ chunkId: number, lastUpdatedAt: number }[]> {
   for (let attempt = 0; attempt < chunkInfoLoadingMaxAttempts; attempt += 1) {
     try {

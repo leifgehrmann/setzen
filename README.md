@@ -3,7 +3,7 @@
 𝐒𝐄𝐓𝐙𝐄𝐍 is a multiplayer collaborative canvas where you place tiles on a globe
 consisting of a million 'trixels'. It is a remix of Reddit’s [April Fools experiment r/place](https://en.wikipedia.org/wiki/R/place).
 
-You can find a demo at [setzen.leifgehrmann.com](https://setzen.leifgehrmann.com/)
+You can find an archived demo at [setzen.leifgehrmann.com](https://setzen.leifgehrmann.com/), which no longer is multiplayer, but the interactivity still works.
 
 # Server
 
@@ -138,6 +138,12 @@ $ export SETZEN_CONTACT_ISSUES_URL='https://example.com/setzen/issues'
 $ export SETZEN_CONTACT_PROJECT_URL='https://example.com/setzen'
 ```
 
+To use the app in an archived mode, set the variables as:
+
+```
+$ export SETZEN_ARCHIVE_URL='https://example.com/archive/'
+```
+
 **To view**
 
 ```
@@ -148,6 +154,13 @@ $ npm run preview
 **To develop**
 
 ```
+$ npm run dev
+```
+
+**To develop with archived mode**
+
+```
+$ export SETZEN_ARCHIVE_URL='http://localhost:5173/archive-2025-02-02/'
 $ npm run dev
 ```
 

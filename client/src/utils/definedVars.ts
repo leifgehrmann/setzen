@@ -6,6 +6,10 @@ export function getWebAppHost(): string {
   // @ts-ignore
   return webAppHost;
 }
+export function getArchiveUrl(): string {
+  // @ts-ignore
+  return archiveUrl;
+}
 export function getWebSocketUrl(): string {
   // @ts-ignore
   return webSocketUrl;
