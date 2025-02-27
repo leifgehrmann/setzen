@@ -3,7 +3,7 @@ type CloseWebSocketEventListener = (ev: WebSocketEventMap['close']) => any;
 type MessageWebSocketEventListener = (ev: WebSocketEventMap['message']) => any;
 
 export default class ArchivedWebSocket {
-  private archiveUrl: string;
+  private archiveUrlString: string;
 
   private openListener: OpenWebSocketEventListener | null;
 
@@ -13,8 +13,8 @@ export default class ArchivedWebSocket {
 
   private chunksResponse: Record<string, string>;
 
-  constructor(archiveUrl: string) {
-    this.archiveUrl = archiveUrl;
+  constructor(archiveUrlString: string) {
+    this.archiveUrlString = archiveUrlString;
     this.openListener = null;
     this.closeListener = null;
     this.messageListener = null;
@@ -68,7 +68,7 @@ export default class ArchivedWebSocket {
           return;
         }
 
-        fetch(`${this.archiveUrl}chunks.csv`)
+        fetch(`${this.archiveUrlString}chunks.csv`)
           .then((value: Response) => value.text())
           .then((csv: string) => {
             csv.split('\n').forEach((csvLine) => {
@@ -94,7 +94,7 @@ export default class ArchivedWebSocket {
         break;
       }
       case 'readQueue': {
-        fetch(`${this.archiveUrl}chunk-queue.csv`)
+        fetch(`${this.archiveUrlString}chunk-queue.csv`)
           .then((value: Response) => value.text())
           .then((csv: string) => {
             const queueData = csv.split('\n')

@@ -28,9 +28,9 @@ export function initWebSocket(
   openCallback: Function,
   closeCallback: Function,
 ) {
-  const archiveUrl = getArchiveUrl();
-  if (archiveUrl.length !== 0) {
-    webSocket = new ArchivedWebSocket(archiveUrl);
+  const archiveUrlString = getArchiveUrl();
+  if (archiveUrlString.length !== 0) {
+    webSocket = new ArchivedWebSocket(archiveUrlString);
   } else {
     webSocket = new WebSocket(getWebSocketUrl());
   }
