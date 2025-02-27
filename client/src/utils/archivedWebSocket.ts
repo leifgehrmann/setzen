@@ -1,32 +1,45 @@
+type OpenWebSocketEventListener = (ev: WebSocketEventMap['open']) => any;
+type CloseWebSocketEventListener = (ev: WebSocketEventMap['close']) => any;
+type MessageWebSocketEventListener = (ev: WebSocketEventMap['message']) => any;
+
 export default class ArchivedWebSocket {
   private archiveUrl: string;
 
-  private listeners: Record<string, (this: ArchivedWebSocket, ev: Event) => any | null>;
+  private openListener: OpenWebSocketEventListener | null;
+
+  private closeListener: CloseWebSocketEventListener | null;
+
+  private messageListener: MessageWebSocketEventListener | null;
 
   private chunksResponse: Record<string, string>;
 
   constructor(archiveUrl: string) {
     this.archiveUrl = archiveUrl;
-    this.listeners = {
-      open: null,
-      close: null,
-      error: null,
-      message: null,
-    };
+    this.openListener = null;
+    this.closeListener = null;
+    this.messageListener = null;
     this.chunksResponse = {};
   }
 
   addEventListener<K extends keyof WebSocketEventMap>(
     type: K,
-    listener: (this: ArchivedWebSocket, ev: WebSocketEventMap[K]) => any,
+    listener: (ev: WebSocketEventMap[K]) => any,
   ): void {
-    this.listeners[type] = listener;
-    if (this.listeners.open !== null && this.listeners.message !== null) {
-      this.listeners.open(new Event('open'));
+    switch (type) {
+      case 'open': this.openListener = listener as OpenWebSocketEventListener; break;
+      case 'close': this.closeListener = listener as CloseWebSocketEventListener; break;
+      case 'message': this.messageListener = listener as MessageWebSocketEventListener; break;
+      default: break;
+    }
+    if (this.openListener !== null && this.messageListener !== null) {
+      this.openListener(new Event('open'));
     }
   }
 
   send(data: string): void {
+    if (this.messageListener === null) {
+      return;
+    }
     const message = JSON.parse(data) as {
       action: string,
       data: {
@@ -42,7 +55,7 @@ export default class ArchivedWebSocket {
         const chunkId = message.data.chunkId as number;
         if (this.chunksResponse[chunkId.toString()]) {
           const result = this.chunksResponse[chunkId.toString()];
-          this.listeners.message(new MessageEvent('message', {
+          this.messageListener(new MessageEvent('message', {
             data: JSON.stringify({
               type: 'chunk',
               data: {
@@ -67,7 +80,7 @@ export default class ArchivedWebSocket {
             });
           })
           .then(() => {
-            this.listeners.message(new MessageEvent('message', {
+            this.messageListener!(new MessageEvent('message', {
               data: JSON.stringify({
                 type: 'chunk',
                 data: {
@@ -95,7 +108,7 @@ export default class ArchivedWebSocket {
             const positions = queueData.map((line) => line[0]);
             const colorIds = queueData.map((line) => line[1]);
             const times = queueData.map((line) => line[2]);
-            this.listeners.message(new MessageEvent('message', {
+            this.messageListener!(new MessageEvent('message', {
               data: JSON.stringify({
                 type: 'queue',
                 data: {
@@ -114,7 +127,7 @@ export default class ArchivedWebSocket {
         for (let i = 0; i < 60; i += 1) {
           chunkInfo.push({ chunkId: i, lastUpdatedAt: 0 });
         }
-        this.listeners.message(new MessageEvent('message', {
+        this.messageListener(new MessageEvent('message', {
           data: JSON.stringify({
             type: 'chunkInfo',
             data: chunkInfo,
