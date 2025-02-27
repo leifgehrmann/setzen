@@ -17,10 +17,22 @@
       </div>
       <div class="intro px-5 bg-neutral-800/50">
         <div class="py-2" />
-        <p>Welcome! 𝐒𝐄𝐓𝐙𝐄𝐍 is a multiplayer collaborative canvas where you place tiles on a globe consisting of a million 'trixels'. It is a remix of Reddit’s <a class="underline text-blue-300" href="https://en.wikipedia.org/wiki/R/place">April Fools experiment r/place</a>.</p>
+        <p>Welcome! 𝐒𝐄𝐓𝐙𝐄𝐍 {{tense}} a multiplayer collaborative canvas where you place tiles on a globe consisting of a million 'trixels'. It {{tense}} a remix of Reddit’s <a class="underline text-blue-300" href="https://en.wikipedia.org/wiki/R/place">April Fools experiment r/place</a>.</p>
         <div class="py-2" />
+        <div v-if="isArchived">
+          <p>
+            The multiplayer functionality was shut down in 2025, but you can
+            still view an archived version that allows single-player use!
+          </p>
+          <div class="py-2" />
+        </div>
         <div class="w-full text-center text-xs">
-          <p><a href="#terms-of-use">Terms of Use</a> · <a href="#privacy-policy">Privacy Policy</a><br><span class="whitespace-nowrap">Last Updated: {{policyDateString}}</span></p>
+          <p v-if="!isArchived">
+            <a href="#terms-of-use">Terms of Use</a> · <a href="#privacy-policy">Privacy Policy</a><br><span class="whitespace-nowrap">Last Updated: {{policyDateString}}</span>
+          </p>
+          <p v-else>
+            Archived: 2025-02-02
+          </p>
           <div class="py-1" />
           <button
             type="button"
@@ -40,7 +52,10 @@
         <h2 class="text-red-300">Rules</h2>
         <RulesSection />
       </div>
-      <div class="px-5 py-5 bg-green-800/50">
+      <div
+        class="px-5 py-5 bg-green-800/50"
+        :class="{ 'sm:rounded-b-2xl': isArchived }"
+      >
 
         <h2 class="text-green-300">FAQ</h2>
         <FaqSection />
@@ -48,13 +63,19 @@
       </div>
       <!-- eslint-disable-next-line vuejs-accessibility/anchor-has-content -->
       <a id="terms-of-use" />
-      <div class="px-5 py-5 bg-yellow-800/50">
+      <div
+        v-if="!isArchived"
+        class="px-5 py-5 bg-yellow-800/50"
+      >
         <h2 class="text-yellow-300">Terms of Use</h2>
         <TermsOfUse />
       </div>
       <!-- eslint-disable-next-line vuejs-accessibility/anchor-has-content -->
       <a id="privacy-policy" />
-      <div class="px-5 py-5 bg-purple-800/50 sm:rounded-b-2xl">
+      <div
+        v-if="!isArchived"
+        class="px-5 py-5 bg-purple-800/50 sm:rounded-b-2xl"
+      >
         <h2 class="text-purple-300">Privacy Policy</h2>
         <PrivacyPolicy />
       </div>
@@ -70,8 +91,15 @@ import RulesSection from './RulesSection.vue';
 import FaqSection from './FaqSection.vue';
 import TermsOfUse from './TermsOfUse.vue';
 import { getPolicyDateString } from '../../utils/policyCheck';
+import { getArchiveUrl } from '../../utils/definedVars';
 
 const policyDateString = ref(getPolicyDateString());
+const tense = ref('is');
+
+const isArchived = getArchiveUrl().length > 0;
+if (isArchived) {
+  tense.value = 'was';
+}
 
 const emit = defineEmits(['connect']);
 </script>
